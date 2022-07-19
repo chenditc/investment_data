@@ -7,6 +7,8 @@ Follow https://github.com/dolthub/dolt
 
 ## Export to qlib format
 ```
+dolt sql-server -H 0.0.0.0
+
 # Run in this repo's root directory
 mkdir ./qlib/qlib_source
 python ./qlib/dump_all_to_qlib_source.py
