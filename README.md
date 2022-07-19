@@ -5,6 +5,16 @@ Follow https://github.com/dolthub/dolt
 ## Clone data
 `dolt clone chenditc/investment_data`
 
+## Export to qlib format
+```
+# Run in this repo's root directory
+mkdir ./qlib/qlib_source
+python ./qlib/dump_all_to_qlib_source.py
+
+# Run qlib's yahoo converter: https://github.com/microsoft/qlib/tree/main/scripts/data_collector/yahoo
+python scripts/data_collector/yahoo/collector.py normalize_data --date_field_name "tradedate"
+python scripts/dump_bin.py dump_all
+```
 
 # Initiative
 1. Try to fill in missing data by combining data from multiple data source. For example, delist company's data.
