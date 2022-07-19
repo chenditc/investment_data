@@ -1,4 +1,9 @@
 # Setup
+## Install dolt
+Follow https://github.com/dolthub/dolt
+
+## Clone data
+`dolt clone chenditc/investment_data`
 
 
 # Initiative
