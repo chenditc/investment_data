@@ -9,5 +9,5 @@ RUN  pip install numpy && pip install --upgrade cython \
    && cd /qlib/ && pip install . && pip install -r scripts/data_collector/yahoo/requirements.txt
 COPY ./requirements.txt /tmp/requirements.txt
 RUN pip install -r /tmp/requirements.txt
-COPY . /app
+COPY . /investment_data/
 WORKDIR /investment_data/
