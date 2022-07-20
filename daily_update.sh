@@ -1,3 +1,5 @@
+dolt pull chenditc/investment_data
+
 echo "Updating index weight"
 startdate=$(dolt sql -q "select DATE_FORMAT(DATE_ADD(max(trade_date), INTERVAL 1 DAY), '%Y%m%d') from ts_index_weight" -r csv | tail -1)
 python3 tushare/dump_index_weight.py --start_date=$startdate

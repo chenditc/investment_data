@@ -1,0 +1,5 @@
+*.csv
+.dolt/
+.sqlhistory
+*.log
+*.out

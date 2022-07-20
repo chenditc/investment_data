@@ -7,16 +7,20 @@ Follow https://github.com/dolthub/dolt
 
 ## Export to qlib format
 ```
-dolt sql-server -H 0.0.0.0
-
-# Run in this repo's root directory
-mkdir ./qlib/qlib_source
-python ./qlib/dump_all_to_qlib_source.py
-
-# Run qlib's yahoo converter: https://github.com/microsoft/qlib/tree/main/scripts/data_collector/yahoo
-python3 ~/qlib/scripts/data_collector/yahoo/collector.py normalize_data --source_dir /mnt/investment_data/qlib/qlib_source/ --normalize_dir ./qlib_normalize --max_workers=16 --date_field_name="tradedate" 
-python3 ~/qlib/scripts/dump_bin.py dump_all --csv_path ./qlib_normalize/ --qlib_dir ./qlib_bin --date_field_name=tradedate --exclude_fields=tradedate,symbol
+docker run -v /<some output directory>:/output --it --rm chenditc/investment_data bash dump_qlib_bin.sh && cp ./qlib_bin.tar.gz /output/
 ```
+
+## Daily Update
+```
+export TUSHARE=<Token>
+bash daily_update.sh
+```
+
+## Daily update and output
+```
+docker run -v /<some output directory>:/output --it --rm chenditc/investment_data bash daily_update.sh && bash dump_qlib_bin.sh && cp ./qlib_bin.tar.gz /output/
+```
+
 
 # Initiative
 1. Try to fill in missing data by combining data from multiple data source. For example, delist company's data.

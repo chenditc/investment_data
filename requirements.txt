@@ -1,0 +1,4 @@
+tushare
+sqlalchemy
+pymysql
+fire
