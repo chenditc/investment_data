@@ -18,9 +18,11 @@ def get_trade_cal(start_date, end_date):
 
 index_list = ['399300.SZ', '000905.SH', '000300.SH']
 
-def dump_index_data(start_date, end_date, skip_exists=True):
+def dump_index_data(start_date="19900101", end_date="20500101", skip_exists=True):
     trade_date_df = get_trade_cal(start_date, end_date)
-    print(trade_date_df)
+
+    if not os.path.exists(f"{file_path}/index/"):
+        os.makedirs(f"{file_path}/index/")
     
     for index_name in index_list:
         filename = f'{file_path}/index/{index_name}.csv'
@@ -30,7 +32,11 @@ def dump_index_data(start_date, end_date, skip_exists=True):
             end_index = min((time_slice+1) * 4000 - 1, len(trade_date_df) - 1)
             end_date = trade_date_df["cal_date"][end_index]
             df = pro.index_daily(ts_code=index_name, start_date = start_date, end_date=end_date)
+            if df.empty:
+                continue
             result_df_list.append(df)
+        if len(result_df_list) == 0:
+            continue
         result_df = pandas.concat(result_df_list)
         result_df["tradedate"] = result_df["trade_date"]
         result_df["volume"] = result_df["vol"]

@@ -16,7 +16,9 @@ index_list = [
     ]
 
 def dump_index_data(start_date=None, end_date=None, skip_exists=True):
-    
+    if not os.path.exists(f"{file_path}/index_weight/"):
+        os.makedirs(f"{file_path}/index_weight/")
+
     for index_name in index_list:
         time_step = datetime.timedelta(days=15)
         if start_date is None:
@@ -28,7 +30,7 @@ def dump_index_data(start_date=None, end_date=None, skip_exists=True):
             index_start_date = datetime.datetime.strptime(str(start_date), '%Y%m%d')
         
         if end_date is None:
-            index_end_date = list_date_obj + time_step
+            index_end_date = index_start_date + time_step
         else:
             index_end_date = datetime.datetime.strptime(str(end_date), '%Y%m%d')
 
@@ -37,10 +39,14 @@ def dump_index_data(start_date=None, end_date=None, skip_exists=True):
         result_df_list = []
         while index_end_date < datetime.datetime.now():
             df = pro.index_weight(index_code=index_name, start_date = index_start_date.strftime('%Y%m%d'), end_date=index_end_date.strftime('%Y%m%d'))
-            result_df_list.append(df)
             index_start_date += time_step
             index_end_date += time_step
+            if df.empty:
+                continue
+            result_df_list.append(df)
             time.sleep(0.5)
+        if len(result_df_list) == 0:
+            continue
         result_df = pandas.concat(result_df_list)
         result_df["stock_code"] = result_df["con_code"]
         result_df.to_csv(filename, index=False)
