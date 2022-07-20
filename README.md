@@ -3,6 +3,11 @@
 Follow https://github.com/dolthub/dolt
 
 ## Clone data
+
+Raw data hosted on dolt: https://www.dolthub.com/repositories/chenditc/investment_data
+
+To download as dolt database:
+
 `dolt clone chenditc/investment_data`
 
 ## Export to qlib format
