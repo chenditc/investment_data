@@ -29,7 +29,7 @@ docker run -v /<some output directory>:/output -it --rm chenditc/investment_data
 ## Download qlib bin
 ```
 wget https://github.com/chenditc/investment_data/releases/download/20220720/qlib_bin.tar.gz
-tar -zxvf qlib_bin.tar.gz -C ~/.qlib/qlib_data/cn_data
+tar -zxvf qlib_bin.tar.gz -C ~/.qlib/qlib_data/cn_data --strip-components=2
 ```
 
 # Initiative
