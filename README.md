@@ -76,3 +76,9 @@ Use one_time_db_scripts to import c_a_stock_eod_price table, used as a history v
 
 # Contribution
 This project is still in early stage and I don't know what's the best way to work together yet. If you are interested in contributing, feel free to email me: chenditc@gmail.com
+
+## Help wanted
+1. Currently there is only a stock data, in the future, I would like to add future, fund and bond data.
+2. Currently incremental update is using Tushare's data, ideally we want multiple data source to validate against each other.
+3. Validate historical data is computation resource expensive, I only validate the absolute value of price for now. Adjust factor is not validated yet.
+4. Yahoo data source validation generates a lot of anomaly, I have not fully validate them yet.
