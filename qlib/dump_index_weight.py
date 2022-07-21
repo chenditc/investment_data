@@ -3,6 +3,7 @@ import pymysql
 import pandas as pd
 import fire
 import os
+import datetime
 
 def dump_all_to_sqlib_source(skip_exists=False):
   sqlEngine = create_engine('mysql+pymysql://root:@127.0.0.1/investment_data', pool_recycle=3600)
@@ -17,12 +18,33 @@ def dump_all_to_sqlib_source(skip_exists=False):
 
   for index_name, index_code in index_map.items():
     filename = f'{script_path}/qlib_index/{index_name}.txt'
-    print("Dumping to file: ", filename)
     if skip_exists and os.path.isfile(filename):
         continue
-    sql = f"select concat(substr(stock_code, 8, 2), substr(stock_code, 1, 6)), min(trade_date), max(trade_date) FROM ts_index_weight WHERE index_code = '{index_code}' GROUP BY stock_code"
-    stock_df = pd.read_sql(sql, dbConnection)
-    stock_df.to_csv(filename, index=False, header=False, sep='\t')
+
+    print("Dumping to file: ", filename)
+    change_date_sql = """
+      select min(trade_date) as change_date from
+      (
+        select trade_date, MD5(GROUP_CONCAT(stock_code)) as signature
+        from ts_index_weight 
+        where index_code = '{}'
+        group by trade_date
+      ) date_sig_table
+      group by signature
+      order by change_date
+    """.format(index_code)
+    change_date_pd = pd.read_sql(change_date_sql, dbConnection)["change_date"]
+    result_df_list = []
+    for i in range(len(change_date_pd) - 1):
+      start_date = change_date_pd[i].strftime("%Y-%m-%d")
+      end_date = (change_date_pd[i+1] - datetime.timedelta(days=1)).strftime("%Y-%m-%d")
+
+      sql = f"select concat(substr(stock_code, 8, 2), substr(stock_code, 1, 6)), '{start_date}' as start_date, '{end_date}' as end_date FROM ts_index_weight WHERE index_code = '{index_code}' AND trade_date = '{start_date}'"
+      stock_df = pd.read_sql(sql, dbConnection)
+      if stock_df.empty:
+        raise Exception(f"No data for {sql}")
+      result_df_list.append(stock_df)
+    pd.concat(result_df_list).to_csv(filename, index=False, header=False, sep='\t')
 
 if __name__ == "__main__":
   fire.Fire(dump_all_to_sqlib_source)
