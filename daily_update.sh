@@ -1,4 +1,4 @@
-dolt pull chenditc/investment_data
+dolt pull origin
 
 echo "Updating index weight"
 startdate=$(dolt sql -q "select DATE_FORMAT(DATE_ADD(max(trade_date), INTERVAL 1 DAY), '%Y%m%d') from ts_index_weight" -r csv | tail -1)

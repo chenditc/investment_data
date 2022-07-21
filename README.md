@@ -26,6 +26,11 @@ bash daily_update.sh
 docker run -v /<some output directory>:/output -it --rm chenditc/investment_data bash daily_update.sh && bash dump_qlib_bin.sh && cp ./qlib_bin.tar.gz /output/
 ```
 
+## Download qlib bin
+```
+wget https://github.com/chenditc/investment_data/releases/download/20220720/qlib_bin.tar.gz
+tar -zxvf qlib_bin.tar.gz -C ~/.qlib/qlib_data/cn_data
+```
 
 # Initiative
 1. Try to fill in missing data by combining data from multiple data source. For example, delist company's data.
@@ -48,7 +53,7 @@ final: Merged final data with validation and correction
 Use one_time_db_scripts to import w_a_stock_eod_price table, used as initial price standard
 
 ## c
-
+Use one_time_db_scripts to import c_a_stock_eod_price table, used as a history validation source
 
 ## ts
 1. Use tushare/update_stock_list.sh to load stock list
@@ -68,3 +73,6 @@ Use one_time_db_scripts to import w_a_stock_eod_price table, used as initial pri
    - Compare high, low, open, close, volume absolute value
    - Calcualte adjclose convert ratio use a link date for each stock.
    - Calculate w data adjclose use link date's ratio, and compare it with final data.
+
+# Contribution
+This project is still in early stage and I don't know what's the best way to work together yet. If you are interested in contributing, feel free to email me: chenditc@gmail.com

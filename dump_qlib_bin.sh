@@ -1,5 +1,5 @@
 cd /investment_data/
-dolt pull chenditc/investment_data
+dolt pull origin
 
 dolt sql-server &
 mkdir ./qlib/qlib_source
