@@ -12,7 +12,7 @@ To download as dolt database:
 
 ## Export to qlib format
 ```
-docker run -v /<some output directory>:/output -it --rm chenditc/investment_data bash dump_qlib_bin.sh && cp ./qlib_bin.tar.gz /output/
+docker run -v /<some output directory>:/output -it --rm chenditc/investment_data bash -c "bash dump_qlib_bin.sh && cp ./qlib_bin.tar.gz /output/"
 ```
 
 ## Daily Update
@@ -23,7 +23,7 @@ bash daily_update.sh
 
 ## Daily update and output
 ```
-docker run -v /<some output directory>:/output -it --rm chenditc/investment_data bash daily_update.sh && bash dump_qlib_bin.sh && cp ./qlib_bin.tar.gz /output/
+docker run -v /<some output directory>:/output -it --rm chenditc/investment_data bash -c "bash daily_update.sh && bash dump_qlib_bin.sh && cp ./qlib_bin.tar.gz /output/"
 ```
 
 ## Download qlib bin

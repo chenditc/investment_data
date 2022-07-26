@@ -38,6 +38,8 @@ def dump_all_to_sqlib_source(skip_exists=False):
     for i in range(len(change_date_pd) - 1):
       start_date = change_date_pd[i].strftime("%Y-%m-%d")
       end_date = (change_date_pd[i+1] - datetime.timedelta(days=1)).strftime("%Y-%m-%d")
+      if i == len(change_date_pd) - 2:
+        end_date = datetime.datetime.today().strftime("%Y-%m-%d")
 
       sql = f"select concat(substr(stock_code, 8, 2), substr(stock_code, 1, 6)), '{start_date}' as start_date, '{end_date}' as end_date FROM ts_index_weight WHERE index_code = '{index_code}' AND trade_date = '{start_date}'"
       stock_df = pd.read_sql(sql, dbConnection)
