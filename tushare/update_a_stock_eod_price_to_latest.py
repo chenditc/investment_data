@@ -64,6 +64,7 @@ def dump_astock_data():
             "close": "close",
             "adj_close": "adjclose",
             "vol": "volume",
+            "amount": "amount",
             "ts_code": "symbol"
         }
         data = ts_data.rename(columns=column_mapping)[list(column_mapping.values())]      

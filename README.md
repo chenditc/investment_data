@@ -12,7 +12,7 @@ To download as dolt database:
 
 ## Export to qlib format
 ```
-docker run -v /<some output directory>:/output -it --rm chenditc/investment_data bash -c "bash dump_qlib_bin.sh && cp ./qlib_bin.tar.gz /output/"
+docker run -v /<some output directory>:/output -it --rm chenditc/investment_data bash dump_qlib_bin.sh && cp ./qlib_bin.tar.gz /output/
 ```
 
 ## Daily Update
@@ -23,14 +23,9 @@ bash daily_update.sh
 
 ## Daily update and output
 ```
-docker run -v /<some output directory>:/output -it --rm chenditc/investment_data bash -c "bash daily_update.sh && bash dump_qlib_bin.sh && cp ./qlib_bin.tar.gz /output/"
+docker run -v /<some output directory>:/output -it --rm chenditc/investment_data bash daily_update.sh && bash dump_qlib_bin.sh && cp ./qlib_bin.tar.gz /output/
 ```
 
-## Download qlib bin
-```
-wget https://github.com/chenditc/investment_data/releases/download/20220720/qlib_bin.tar.gz
-tar -zxvf qlib_bin.tar.gz -C ~/.qlib/qlib_data/cn_data --strip-components=2
-```
 
 # Initiative
 1. Try to fill in missing data by combining data from multiple data source. For example, delist company's data.
@@ -53,7 +48,7 @@ final: Merged final data with validation and correction
 Use one_time_db_scripts to import w_a_stock_eod_price table, used as initial price standard
 
 ## c
-Use one_time_db_scripts to import c_a_stock_eod_price table, used as a history validation source
+
 
 ## ts
 1. Use tushare/update_stock_list.sh to load stock list
@@ -73,12 +68,3 @@ Use one_time_db_scripts to import c_a_stock_eod_price table, used as a history v
    - Compare high, low, open, close, volume absolute value
    - Calcualte adjclose convert ratio use a link date for each stock.
    - Calculate w data adjclose use link date's ratio, and compare it with final data.
-
-# Contribution
-This project is still in early stage and I don't know what's the best way to work together yet. If you are interested in contributing, feel free to email me: chenditc@gmail.com
-
-## Help wanted
-1. Currently there is only a stock data, in the future, I would like to add future, fund and bond data.
-2. Currently incremental update is using Tushare's data, ideally we want multiple data source to validate against each other.
-3. Validate historical data is computation resource expensive, I only validate the absolute value of price for now. Adjust factor is not validated yet.
-4. Yahoo data source validation generates a lot of anomaly, I have not fully validate them yet.
