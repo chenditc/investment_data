@@ -1,0 +1,35 @@
+name: Upload latest data to github release
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron:  '30 9 * * *'
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout 
+      uses: actions/checkout@v2 # Required to mount the Github Workspace to a volume 
+    - name: Get current date
+      id: date
+      run: echo "::set-output name=date::$(date +'%Y-%m-%d')"
+    - uses: addnab/docker-run-action@v3
+      with:
+        registry: docker.io
+        image: chenditc/investment_data:latest
+        options: -v ${{ github.workspace }}:/output
+        run: |
+          bash -c "bash dump_qlib_bin.sh && cp ./qlib_bin.tar.gz /output/"
+    - name: Upload binaries to release
+      uses: svenstaro/upload-release-action@v2
+      with:
+        repo_token: ${{ secrets.GH_TOKEN }}
+        file: ${{ github.workspace }}/qlib_bin.tar.gz
+        asset_name: qlib_bin.tar.gz
+        tag: ${{ steps.date.outputs.date }}
+        overwrite: true
+        body: "Daily update release"
