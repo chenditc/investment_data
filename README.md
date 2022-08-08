@@ -26,6 +26,10 @@ bash daily_update.sh
 docker run -v /<some output directory>:/output -it --rm chenditc/investment_data bash daily_update.sh && bash dump_qlib_bin.sh && cp ./qlib_bin.tar.gz /output/
 ```
 
+## Extract tar file to qlib directory
+```
+tar -zxvf qlib_bin.tar.gz -C ~/.qlib/qlib_data/cn_data --strip-components=2
+```
 
 # Initiative
 1. Try to fill in missing data by combining data from multiple data source. For example, delist company's data.
