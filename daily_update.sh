@@ -5,7 +5,7 @@ startdate=$(dolt sql -q "select DATE_FORMAT(DATE_ADD(max(trade_date), INTERVAL 1
 python3 tushare/dump_index_weight.py --start_date=$startdate
 for file in $(ls tushare/index_weight/); 
 do  
-  dolt table import -u ts_index_weight tushare/index/$file; 
+  dolt table import -u ts_index_weight tushare/index_weight/$file; 
 done
 
 echo "Updating index price"
