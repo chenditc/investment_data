@@ -11,7 +11,9 @@ def dump_all_to_sqlib_source(skip_exists=False):
 
   index_map = {
     "csi300" : "399300.SZ",
-    "csi500" : "000905.SH"
+    "csi500" : "000905.SH",
+    "csi800" : "000906.SH",
+    "csiall" : "000985.SH",
   }
 
   script_path = os.path.dirname(os.path.realpath(__file__))
