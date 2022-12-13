@@ -37,12 +37,11 @@ tar -zxvf qlib_bin.tar.gz -C ~/.qlib/qlib_data/cn_data --strip-components=2
 
 # Data Source
 
-w: high quality static data source 
-c: high quality static data source
+w(wind): high quality static data source. Only available till 2019.
+c(caihui): high quality static data source. Only available till 2019.
 ts: Tushare data source
 ak: Akshare data source
 yahoo: Use Qlib's yahoo collector https://github.com/microsoft/qlib/tree/main/scripts/data_collector/yahoo
-manual: Some manually entered data
 
 final: Merged final data with validation and correction
 
@@ -72,3 +71,9 @@ Use one_time_db_scripts to import w_a_stock_eod_price table, used as initial pri
    - Compare high, low, open, close, volume absolute value
    - Calcualte adjclose convert ratio use a link date for each stock.
    - Calculate w data adjclose use link date's ratio, and compare it with final data.
+
+# Contribution Guide
+## Add more stock index
+To add a new stock index, we need to change:
+1. Add download script. Change [tushare/dump_index_eod_price.py]([tushare/dump_index_eod_price.py](https://github.com/chenditc/investment_data/blob/main/tushare/dump_index_weight.py#L15)) script to dump the index info. If the index is not available in tushare, write a new script and add to the [daily_update.sh]([daily_update.sh](https://github.com/chenditc/investment_data/blob/main/daily_update.sh#L12)) script.
+2. Modify export script. Change the qlib dump script [qlib/dump_index_weight.py#L13](https://github.com/chenditc/investment_data/blob/main/qlib/dump_index_weight.py#L13), so that index will be dump and renamed to a txt file for use.
