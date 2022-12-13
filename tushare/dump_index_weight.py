@@ -12,7 +12,9 @@ file_path = os.path.dirname(os.path.realpath(__file__))
 
 index_list = [
     '000905.SH', # csi500
-    '399300.SZ'  # csi300
+    '399300.SZ', # csi300
+    '000906.SH', # csi800
+    '000985.SH', # csiall
     ]
 
 def dump_index_data(start_date=None, end_date=None, skip_exists=True):
