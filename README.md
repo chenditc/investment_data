@@ -1,3 +1,5 @@
+Chinese blog about this project: [量化系列2 - 众包数据集](https://mp.weixin.qq.com/s/Athd5hsiN_hIKKgxIiO_ow)
+
 # Setup
 ## Install dolt
 Follow https://github.com/dolthub/dolt
