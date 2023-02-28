@@ -1,11 +1,20 @@
 Chinese blog about this project: [量化系列2 - 众包数据集](https://mp.weixin.qq.com/s/Athd5hsiN_hIKKgxIiO_ow)
 
-# Setup
+# How to use it
+1. Download tar ball from latest release page on github
+2. Extract tar file to default qlib directory
+```
+wget https://github.com/chenditc/investment_data/releases/download/2023-02-27/qlib_bin.tar.gz
+tar -zxvf qlib_bin.tar.gz -C ~/.qlib/qlib_data/cn_data --strip-components=2
+```
+
+# Developement Setup
+If you want to contribute to the set of scripts or the data, here is what you should do to set up a dev environment.
+
 ## Install dolt
 Follow https://github.com/dolthub/dolt
 
 ## Clone data
-
 Raw data hosted on dolt: https://www.dolthub.com/repositories/chenditc/investment_data
 
 To download as dolt database:
@@ -17,7 +26,9 @@ To download as dolt database:
 docker run -v /<some output directory>:/output -it --rm chenditc/investment_data bash dump_qlib_bin.sh && cp ./qlib_bin.tar.gz /output/
 ```
 
-## Daily Update
+## Run Daily Update
+You will need tushare token to use tushare api. Get tushare token from https://tushare.pro/
+
 ```
 export TUSHARE=<Token>
 bash daily_update.sh
@@ -39,28 +50,30 @@ tar -zxvf qlib_bin.tar.gz -C ~/.qlib/qlib_data/cn_data --strip-components=2
 
 # Data Source
 
-w(wind): high quality static data source. Only available till 2019.
-c(caihui): high quality static data source. Only available till 2019.
-ts: Tushare data source
-ak: Akshare data source
-yahoo: Use Qlib's yahoo collector https://github.com/microsoft/qlib/tree/main/scripts/data_collector/yahoo
+The database table on dolthub is named with prefix of data source, for example `ts_a_stock_eod_price`. The meaning of the prefix:
 
-final: Merged final data with validation and correction
+- w(wind): high quality static data source. Only available till 2019.
+- c(caihui): high quality static data source. Only available till 2019.
+- ts: Tushare data source
+- ak: Akshare data source
+- yahoo: Use Qlib's yahoo collector https://github.com/microsoft/qlib/tree/main/scripts/data_collector/yahoo
+
+- final: Merged final data with validation and correction
 
 # Initial import 
 
-## w
-Use one_time_db_scripts to import w_a_stock_eod_price table, used as initial price standard
+- w(wind): Use one_time_db_scripts to import w_a_stock_eod_price table, used as initial price standard
+- c(caihui): SQL import to c_a_stock_eod_price table
+- ts(tushare):
+  1. Use tushare/update_stock_list.sh to load stock list
+  2. Use tushare/update_stock_price.sh to load stock price
+- yahoo
+  1. Use yahoo collector to load stock price
 
-## c
-
-
-## ts
-1. Use tushare/update_stock_list.sh to load stock list
-2. Use tushare/update_stock_price.sh to load stock price
-
-## yahoo
-1. Use yahoo collector to load stock price
+# Daily Update
+Currently the daily update is only using tushare data source and triggered by github action.
+1. I maintained a offline job whcih runs [daily_update.sh](daily_update.sh) every 30 mins to collect data and push to dolthub.
+2. A github action [.github/workflows/upload_release.yml](.github/workflows/upload_release.yml) is triggered daily, which then calls bash dump_qlib_bin.sh to generate daily tar file and upload to release page.
 
 # Merge logic
 1. Use w data source as baseline, use other data source to validate against it.
