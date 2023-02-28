@@ -1,5 +1,26 @@
 Chinese blog about this project: [量化系列2 - 众包数据集](https://mp.weixin.qq.com/s/Athd5hsiN_hIKKgxIiO_ow)
 
+- [How to use it](#how-to-use-it)
+- [Developement Setup](#developement-setup)
+  * [Install dolt](#install-dolt)
+  * [Clone data](#clone-data)
+  * [Export to qlib format](#export-to-qlib-format)
+  * [Run Daily Update](#run-daily-update)
+  * [Daily update and output](#daily-update-and-output)
+  * [Extract tar file to qlib directory](#extract-tar-file-to-qlib-directory)
+- [Initiative](#initiative)
+- [Project Detail](#project-detail)
+  * [Data Source](#data-source)
+  * [Initial import](#initial-import)
+  * [Daily Update](#daily-update)
+  * [Merge logic](#merge-logic)
+  * [Validation logic](#validation-logic)
+- [Contribution Guide](#contribution-guide)
+  * [Add more stock index](#add-more-stock-index)
+
+<small><i><a href='http://ecotrust-canada.github.io/markdown-toc/'>Table of contents generated with markdown-toc</a></i></small>
+
+
 # How to use it
 1. Download tar ball from latest release page on github
 2. Extract tar file to default qlib directory
@@ -48,7 +69,8 @@ tar -zxvf qlib_bin.tar.gz -C ~/.qlib/qlib_data/cn_data --strip-components=2
 1. Try to fill in missing data by combining data from multiple data source. For example, delist company's data.
 2. Try to correct data by cross validate against multiple data source.
 
-# Data Source
+# Project Detail
+## Data Source
 
 The database table on dolthub is named with prefix of data source, for example `ts_a_stock_eod_price`. The meaning of the prefix:
 
@@ -60,7 +82,7 @@ The database table on dolthub is named with prefix of data source, for example `
 
 - final: Merged final data with validation and correction
 
-# Initial import 
+## Initial import 
 
 - w(wind): Use one_time_db_scripts to import w_a_stock_eod_price table, used as initial price standard
 - c(caihui): SQL import to c_a_stock_eod_price table
@@ -70,17 +92,17 @@ The database table on dolthub is named with prefix of data source, for example `
 - yahoo
   1. Use yahoo collector to load stock price
 
-# Daily Update
+## Daily Update
 Currently the daily update is only using tushare data source and triggered by github action.
 1. I maintained a offline job whcih runs [daily_update.sh](daily_update.sh) every 30 mins to collect data and push to dolthub.
 2. A github action [.github/workflows/upload_release.yml](.github/workflows/upload_release.yml) is triggered daily, which then calls bash dump_qlib_bin.sh to generate daily tar file and upload to release page.
 
-# Merge logic
+## Merge logic
 1. Use w data source as baseline, use other data source to validate against it.
 2. Since w data's adjclose is different from ts data's adjclose, we will use a **"link date"** to calculate a ratio to map ts adjclose to w adjclose. This can be the maximum first valid data for each data source. The reason we don't use a fixed value for link date is: Some stock might not be trading at specific date, and the enlist and delist date are all different. We store the link date information and adj_ratio in link_table. adj_ratio = link_adj_close / w_adj_close;
 3. Append ts data to final dataset, the adjclose will be ts_adj_close / ts_adj_ratio
 
-# Validation logic
+## Validation logic
 1. Generate final data by concatinate w data and ts data.
 2. Run validate by pair two data source:
    - Compare high, low, open, close, volume absolute value
