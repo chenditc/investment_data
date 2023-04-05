@@ -14,6 +14,7 @@ def get_trade_cal(start_date, end_date):
                             start_date=start_date,
                             end_date=end_date,
                             fields='cal_date')
+    df = df.sort_values(by="cal_date").reset_index(drop=True)
     return df
 
 index_list = ['399300.SZ', '000905.SH', '000300.SH']
@@ -25,6 +26,7 @@ def dump_index_data(start_date="19900101", end_date="20500101", skip_exists=True
         os.makedirs(f"{file_path}/index/")
     
     for index_name in index_list:
+        print(f"Processing {index_name}")
         filename = f'{file_path}/index/{index_name}.csv'
         result_df_list = []
         for time_slice in range(int(len(trade_date_df)/4000) + 1):
