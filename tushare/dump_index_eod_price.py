@@ -17,7 +17,7 @@ def get_trade_cal(start_date, end_date):
     df = df.sort_values(by="cal_date").reset_index(drop=True)
     return df
 
-index_list = ['399300.SZ', '000905.SH', '000300.SH']
+index_list = ['399300.SZ', '000905.SH', '000300.SH', '000906.SH', '000985.SH']
 
 def dump_index_data(start_date="19900101", end_date="20500101", skip_exists=True):
     trade_date_df = get_trade_cal(start_date, end_date)
