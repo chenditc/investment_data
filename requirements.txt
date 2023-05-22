@@ -2,3 +2,4 @@ tushare==1.2.89
 sqlalchemy
 pymysql
 fire
+baostock

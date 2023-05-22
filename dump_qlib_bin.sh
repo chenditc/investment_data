@@ -13,6 +13,7 @@ python3 /qlib/scripts/dump_bin.py dump_all --csv_path ./qlib_normalize/ --qlib_d
 dolt sql-server &
 mkdir ./qlib/qlib_index/
 python3 ./qlib/dump_index_weight.py 
+python3 /qlib/scripts/data_collector/future_calendar_collector.py --qlib_dir ./qlib_bin/ --region cn
 killall dolt
 
 cp qlib/qlib_index/csi* ./qlib_bin/instruments/
