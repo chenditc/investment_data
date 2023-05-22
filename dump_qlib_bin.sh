@@ -13,7 +13,6 @@ python3 /qlib/scripts/dump_bin.py dump_all --csv_path ./qlib_normalize/ --qlib_d
 dolt sql-server &
 mkdir ./qlib/qlib_index/
 python3 ./qlib/dump_index_weight.py 
-python3 ./tushare/dump_day_calendar.py --qlib_dir ./qlib_bin
 killall dolt
 
 cp qlib/qlib_index/csi* ./qlib_bin/instruments/
