@@ -20,7 +20,7 @@ def get_trade_cal(start_date, end_date):
 def get_daily(trade_date):
     for _ in range(3):
         try:
-            price_df = pro.daily(trade_date=trade_date)
+            price_df = pro.daily(trade_date=trade_date, fields='ts_code,trade_date,open,high,low,close,vol,amount,turnover_rate')
             adj_factor = pro.adj_factor(trade_date=trade_date)
             df = pandas.merge(price_df, adj_factor, on="ts_code", how="inner")
             df["adj_close"] = df["close"] * df["adj_factor"]
@@ -64,6 +64,7 @@ def dump_astock_data():
             "close": "close",
             "adj_close": "adjclose",
             "vol": "volume",
+            "turnover_rate": "turn",
             "amount": "amount",
             "ts_code": "symbol"
         }
