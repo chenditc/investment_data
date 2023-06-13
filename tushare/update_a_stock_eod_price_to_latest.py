@@ -38,7 +38,7 @@ def dump_astock_data():
         FROM
         (select tradedate, count(tradedate) as symbol_count 
         FROM ts_a_stock_eod_price 
-        where tradedate > "2022-07-01" 
+        where tradedate > "2023-05-01" 
         group by tradedate) tradedate_record
     WHERE symbol_count > 1000
     """
@@ -46,6 +46,8 @@ def dump_astock_data():
     end_date = datetime.datetime.now().strftime('%Y%m%d')
 
     trade_date_df = get_trade_cal(latest_trade_date, end_date)
+    # Sort from small to big, so that we process earlier date first
+    trade_date_df = trade_date_df.sort_values("cal_date")
     for row in trade_date_df.values.tolist():
         trade_date = row[0]
         if trade_date == latest_trade_date:
