@@ -19,6 +19,7 @@
   * [验证逻辑](#验证逻辑)
 - [贡献指南](#贡献指南)
   * [添加更多股票指数](#添加更多股票指数)
+  * [添加更多数据源或字段](#添加更多数据源或字段)+
 
 <small><i><a href='http://ecotrust-canada.github.io/markdown-toc/'>使用markdown-toc生成的目录</a></i></small>
 
@@ -94,3 +95,21 @@ dolthub上的数据库表以数据源的前缀命名，例如`ts_a_stock_eod_pri
 1. 添加指数权重下载脚本。更改[tushare/dump_index_eod_price.py](https://github.com/chenditc/investment_data/blob/main/tushare/dump_index_weight.py#L15) 脚本以导出指数信息。如果指数在tushare中不可用，则编写一个新脚本并添加到[daily_update.sh]([daily_update.sh](https://github.com/chenditc/investment_data/blob/main/daily_update.sh#L12))脚本中。[示例 Pull Request](https://github.com/chenditc/investment_data/commit/a906e4cb1b34d6a63a1b1eda80a4c734a3cd262f)
 2. 添加价格下载脚本。更改[tushare/dump_index_eod_price.py](https://github.com/chenditc/investment_data/blob/main/tushare/dump_index_eod_price.py)以添加指数价格。例如[示例 Pull Request](https://github.com/chenditc/investment_data/commit/ae7e0066336fc57dd60d13b20ac456b5358ef91f)
 3. 修改导出脚本。更改qlib dump脚本[qlib/dump_index_weight.py#L13](https://github.com/chenditc/investment_data/blob/main/qlib/dump_index_weight.py#L13)，使得指数将被dump并重命名为一个txt文件供使用。[示例 Pull Request](https://github.com/chenditc/investment_data/commit/f41a11c263234587bc40491511ae1822cc509afb)
+
+## 添加更多数据源或字段
+请提出一个 Github Issue 来讨论这个计划，包括：
+  1. 为什么我们需要这些数据？
+  2. 我们如何进行日常更新？
+     - 会使用哪个数据源？
+     - 应该何时触发更新？
+     - 如何验证日常更新已正确完成？
+  3. 我们应该从哪个数据源获取历史数据？
+  4. 我们如何打算验证历史数据？
+     - 数据源是否完整？如何验证的？
+     - 数据源是否准确？如何验证的？
+     - 如果在验证中发现错误，我们将如何处理？
+  5. 是改变现有的表还是添加新的表？
+
+示例 Github Issue：https://github.com/chenditc/investment_data/issues/11
+
+如果数据不干净，我们在此基础上做的工作都就没有可信度。所以我们希望得到的是**高质量**的数据，而不仅仅是**数据**。
