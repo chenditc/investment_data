@@ -85,32 +85,9 @@ The database table on dolthub is named with prefix of data source, for example `
 - baostock: [Baostock ](http://baostock.com/)
 - final: Merged final data with validation and correction
 
-## Initial import 
-
-- w(wind): Use one_time_db_scripts to import w_a_stock_eod_price table, used as initial price standard
-- c(caihui): SQL import to c_a_stock_eod_price table
-- ts(tushare):
-  1. Use tushare/update_stock_list.sh to load stock list
-  2. Use tushare/update_stock_price.sh to load stock price
-- yahoo
-  1. Use yahoo collector to load stock price
-
-## Daily Update
-Currently the daily update is only using tushare data source and triggered by github action.
-1. I maintained a offline job whcih runs [daily_update.sh](daily_update.sh) every 30 mins to collect data and push to dolthub.
-2. A github action [.github/workflows/upload_release.yml](.github/workflows/upload_release.yml) is triggered daily, which then calls bash dump_qlib_bin.sh to generate daily tar file and upload to release page.
-
-## Merge logic
-1. Use w data source as baseline, use other data source to validate against it.
-2. Since w data's adjclose is different from ts data's adjclose, we will use a **"link date"** to calculate a ratio to map ts adjclose to w adjclose. This can be the maximum first valid data for each data source. The reason we don't use a fixed value for link date is: Some stock might not be trading at specific date, and the enlist and delist date are all different. We store the link date information and adj_ratio in link_table. adj_ratio = link_adj_close / w_adj_close;
-3. Append ts data to final dataset, the adjclose will be ts_adj_close / ts_adj_ratio
-
-## Validation logic
-1. Generate final data by concatinate w data and ts data.
-2. Run validate by pair two data source:
-   - Compare high, low, open, close, volume absolute value
-   - Calcualte adjclose convert ratio use a link date for each stock.
-   - Calculate w data adjclose use link date's ratio, and compare it with final data.
+## Initial loading and Validation logic for each table
+ - [final_a_stock_eod_price](docs/final_a_stock_eod_price.md)
+ - [final_a_stock_limit](docs/final_a_stock_limit.md)
 
 # Contribution Guide
 ## Add more stock index
@@ -118,4 +95,22 @@ To add a new stock index, we need to change:
 1. Add index weight download script. Change [tushare/dump_index_eod_price.py](https://github.com/chenditc/investment_data/blob/main/tushare/dump_index_weight.py#L15) script to dump the index info. If the index is not available in tushare, write a new script and add to the [daily_update.sh]([daily_update.sh](https://github.com/chenditc/investment_data/blob/main/daily_update.sh#L12)) script. [Example commit](https://github.com/chenditc/investment_data/commit/a906e4cb1b34d6a63a1b1eda80a4c734a3cd262f)
 2. Add price download script. Change [tushare/dump_index_eod_price.py](https://github.com/chenditc/investment_data/blob/main/tushare/dump_index_eod_price.py) to add the index price. Eg. [Example Commit](https://github.com/chenditc/investment_data/commit/ae7e0066336fc57dd60d13b20ac456b5358ef91f)
 3. Modify export script. Change the qlib dump script [qlib/dump_index_weight.py#L13](https://github.com/chenditc/investment_data/blob/main/qlib/dump_index_weight.py#L13), so that index will be dump and renamed to a txt file for use. [Example commit](https://github.com/chenditc/investment_data/commit/f41a11c263234587bc40491511ae1822cc509afb)
+
+## Add more data source or fields
+Please raise an issue to discuss the plan, which includes:
+  1. Why do we want this data?
+  2. How do we do regular update?
+     - Which data source would we use?
+     - When should we trigger update?
+     - How do we validate regular update complete correctly?
+  2. Which data source should we get historical data?
+  3. How do we plan to validate the historical data?
+     - Is the data source complete? How did we verify this?
+     - Is the data source accurate? How did we verify this?
+     - If we see error in validation, how will we deal with them?
+  4. Are we changing exisiting table or adding new table? 
+
+Example Issue: https://github.com/chenditc/investment_data/issues/11
+
+If the data is not clean, we might try hard to dig insight from it and find incorrect insight. So we want **high quality** data instead of **just data**.
 
