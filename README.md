@@ -20,6 +20,7 @@ Chinese blog about this project: [量化系列2 - 众包数据集](https://mp.we
   * [Validation logic](#validation-logic)
 - [Contribution Guide](#contribution-guide)
   * [Add more stock index](#add-more-stock-index)
+  * [Add more data source or fields](#Add-more-data-source-or-fields)
 
 <small><i><a href='http://ecotrust-canada.github.io/markdown-toc/'>Table of contents generated with markdown-toc</a></i></small>
 
@@ -97,7 +98,9 @@ To add a new stock index, we need to change:
 3. Modify export script. Change the qlib dump script [qlib/dump_index_weight.py#L13](https://github.com/chenditc/investment_data/blob/main/qlib/dump_index_weight.py#L13), so that index will be dump and renamed to a txt file for use. [Example commit](https://github.com/chenditc/investment_data/commit/f41a11c263234587bc40491511ae1822cc509afb)
 
 ## Add more data source or fields
-Please raise an issue to discuss the plan, which includes:
+Please raise an issue to discuss the plan, example issue: https://github.com/chenditc/investment_data/issues/11
+
+It should includes:
   1. Why do we want this data?
   2. How do we do regular update?
      - Which data source would we use?
@@ -110,7 +113,7 @@ Please raise an issue to discuss the plan, which includes:
      - If we see error in validation, how will we deal with them?
   4. Are we changing exisiting table or adding new table? 
 
-Example Issue: https://github.com/chenditc/investment_data/issues/11
+
 
 If the data is not clean, we might try hard to dig insight from it and find incorrect insight. So we want **high quality** data instead of **just data**.
 
