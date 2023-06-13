@@ -82,7 +82,7 @@ The database table on dolthub is named with prefix of data source, for example `
 - ts: Tushare data source
 - ak: Akshare data source
 - yahoo: Use Qlib's yahoo collector https://github.com/microsoft/qlib/tree/main/scripts/data_collector/yahoo
-
+- baostock: [Baostock ](http://baostock.com/)
 - final: Merged final data with validation and correction
 
 ## Initial import 
