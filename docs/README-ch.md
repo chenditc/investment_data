@@ -82,7 +82,6 @@ dolthub上的数据库表以数据源的前缀命名，例如`ts_a_stock_eod_pri
 - ts：Tushare数据源
 - ak：Akshare数据源
 - yahoo：使用Qlib的yahoo收集器 https://github.com/microsoft/qlib/tree/main/scripts/data_collector/yahoo
-
 - final：经过验证和校正的最终合并数据
 
 ## 初始导入 
@@ -102,7 +101,7 @@ dolthub上的数据库表以数据源的前缀命名，例如`ts_a_stock_eod_pri
 
 ## 合并逻辑
 1. 使用w数据源作为基准，使用其他数据源进行验证。
-2. 由于w数据的adjclose与ts数据的adjclose不同，我们将使用一个**"链接日期"**来计算比率，以将ts adjclose映射到w adjclose。这可以是每个数据源的最大第一个有效数据。我们不使用固定值作为链接日期的原因是：某些股票可能在特定日期没有交易，而上市和退市日期都不同。我们在link_table中存储链接日期信息和adj_ratio。adj_ratio = link_adj_close / w_adj_close;
+2. 由于w数据的adjclose与ts数据的adjclose不同，我们将使用一个**链接日期**来计算比率，以将ts adjclose映射到w adjclose。这可以是每个数据源的最大第一个有效数据。我们不使用固定值作为链接日期的原因是：某些股票可能在特定日期没有交易，而上市和退市日期都不同。我们在link_table中存储链接日期信息和adj_ratio。adj_ratio = link_adj_close / w_adj_close;
 3. 将ts数据附加到最终数据集，adjclose将为ts_adj_close / ts_adj_ratio
 
 ## 验证逻辑
@@ -110,13 +109,11 @@ dolthub上的数据库表以数据源的前缀命名，例如`ts_a_stock_eod_pri
 2. 通过配对两个数据源运行验证：
    - 比较高、低、开、收、成交量的绝对值
    - 使用每只股票的链接日期计算adjclose转换比率。
-   - 使用链接日期的比率计算w数据的adjclose，并将其
-
-与最终数据进行比较。
+   - 使用链接日期的比率计算w数据的adjclose，并将其与最终数据进行比较。
 
 # 贡献指南
 ## 添加更多股票指数
 要添加一个新的股票指数，我们需要改变：
-1. 添加指数权重下载脚本。更改[tushare/dump_index_eod_price.py](https://github.com/chenditc/investment_data/blob/main/tushare/dump_index_weight.py#L15) 脚本以导出指数信息。如果指数在tushare中不可用，则编写一个新脚本并添加到[daily_update.sh]([daily_update.sh](https://github.com/chenditc/investment_data/blob/main/daily_update.sh#L12))脚本中。[示例提交](https://github.com/chenditc/investment_data/commit/a906e4cb1b34d6a63a1b1eda80a4c734a3cd262f)
-2. 添加价格下载脚本。更改[tushare/dump_index_eod_price.py](https://github.com/chenditc/investment_data/blob/main/tushare/dump_index_eod_price.py)以添加指数价格。例如[示例提交](https://github.com/chenditc/investment_data/commit/ae7e0066336fc57dd60d13b20ac456b5358ef91f)
-3. 修改导出脚本。更改qlib dump脚本[qlib/dump_index_weight.py#L13](https://github.com/chenditc/investment_data/blob/main/qlib/dump_index_weight.py#L13)，使得指数将被dump并重命名为一个txt文件供使用。[示例提交](https://github.com/chenditc/investment_data/commit/f41a11c263234587bc40491511ae1822cc509afb)
+1. 添加指数权重下载脚本。更改[tushare/dump_index_eod_price.py](https://github.com/chenditc/investment_data/blob/main/tushare/dump_index_weight.py#L15) 脚本以导出指数信息。如果指数在tushare中不可用，则编写一个新脚本并添加到[daily_update.sh]([daily_update.sh](https://github.com/chenditc/investment_data/blob/main/daily_update.sh#L12))脚本中。[示例 Pull Request](https://github.com/chenditc/investment_data/commit/a906e4cb1b34d6a63a1b1eda80a4c734a3cd262f)
+2. 添加价格下载脚本。更改[tushare/dump_index_eod_price.py](https://github.com/chenditc/investment_data/blob/main/tushare/dump_index_eod_price.py)以添加指数价格。例如[示例 Pull Request](https://github.com/chenditc/investment_data/commit/ae7e0066336fc57dd60d13b20ac456b5358ef91f)
+3. 修改导出脚本。更改qlib dump脚本[qlib/dump_index_weight.py#L13](https://github.com/chenditc/investment_data/blob/main/qlib/dump_index_weight.py#L13)，使得指数将被dump并重命名为一个txt文件供使用。[示例 Pull Request](https://github.com/chenditc/investment_data/commit/f41a11c263234587bc40491511ae1822cc509afb)
