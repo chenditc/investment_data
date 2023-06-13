@@ -1,3 +1,6 @@
+ 
+中文 README: [![ch](https://img.shields.io/badge/lang-ch-yellow.svg)](https://github.com/chenditc/investment_data/blob/master/docs/README-ch.md)
+
 Chinese blog about this project: [量化系列2 - 众包数据集](https://mp.weixin.qq.com/s/Athd5hsiN_hIKKgxIiO_ow)
 
 - [How to use it](#how-to-use-it)
