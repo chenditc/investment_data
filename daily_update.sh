@@ -1,3 +1,6 @@
+set -e
+set -x
+
 dolt pull origin
 
 echo "Updating index weight"
