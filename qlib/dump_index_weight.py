@@ -13,6 +13,7 @@ def dump_all_to_sqlib_source(skip_exists=False):
     "csi300" : "399300.SZ",
     "csi500" : "000905.SH",
     "csi800" : "000906.SH",
+    "csi1000": "000852.SH",
     "csiall" : "000985.SH",
   }
 
