@@ -1,3 +1,5 @@
+set -e
+set -x
 cd /investment_data/
 dolt pull origin
 
