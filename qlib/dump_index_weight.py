@@ -49,7 +49,8 @@ def dump_all_to_sqlib_source(skip_exists=False):
       if stock_df.empty:
         raise Exception(f"No data for {sql}")
       result_df_list.append(stock_df)
-    pd.concat(result_df_list).to_csv(filename, index=False, header=False, sep='\t')
+    if len(result_df_list) > 0:
+      pd.concat(result_df_list).to_csv(filename, index=False, header=False, sep='\t')
 
 if __name__ == "__main__":
   fire.Fire(dump_all_to_sqlib_source)
