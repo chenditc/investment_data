@@ -4,7 +4,7 @@ set -x
 dolt pull origin
 
 echo "Updating index weight"
-startdate=$(dolt sql -q "select DATE_FORMAT(DATE_ADD(max(trade_date), INTERVAL 1 DAY), '%Y%m%d') from ts_index_weight" -r csv | tail -1)
+startdate=$(dolt sql -q "select * from max_index_date" -r csv | tail -1)
 python3 tushare/dump_index_weight.py --start_date=$startdate
 for file in $(ls tushare/index_weight/); 
 do  
