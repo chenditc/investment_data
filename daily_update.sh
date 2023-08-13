@@ -27,6 +27,16 @@ dolt sql --file ./tushare/regular_update.sql
 
 dolt add -A
 
-dolt commit -m "Daily update"
+status_output=$(dolt status)
 
-dolt push
+# Check if the status output contains the "nothing to commit, working tree clean" message
+if [[ $status_output == *"nothing to commit, working tree clean"* ]]; then
+    echo "No changes to commit. Working tree is clean."
+else
+    echo "Changes found. Committing and pushing..."
+    # Run the necessary commands
+    dolt commit -m "Daily update"
+    dolt push 
+    echo "Changes committed and pushed."
+fi
+
