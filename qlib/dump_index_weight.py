@@ -36,16 +36,17 @@ def dump_all_to_sqlib_source(skip_exists=False):
       group by signature
       order by change_date
     """.format(index_code)
-    change_date_pd = pd.read_sql(change_date_sql, dbConnection)["change_date"]
+    change_date_pd = pd.read_sql_query(change_date_sql, dbConnection)["change_date"]
     result_df_list = []
-    for i in range(len(change_date_pd) - 1):
+    for i in range(len(change_date_pd)):
       start_date = change_date_pd[i].strftime("%Y-%m-%d")
-      end_date = (change_date_pd[i+1] - datetime.timedelta(days=1)).strftime("%Y-%m-%d")
-      if i == len(change_date_pd) - 2:
+      if i == len(change_date_pd) - 1:
         end_date = datetime.datetime.today().strftime("%Y-%m-%d")
+      else:
+        end_date = (change_date_pd[i+1] - datetime.timedelta(days=1)).strftime("%Y-%m-%d")
 
       sql = f"select concat(substr(stock_code, 8, 2), substr(stock_code, 1, 6)), '{start_date}' as start_date, '{end_date}' as end_date FROM ts_index_weight WHERE index_code = '{index_code}' AND trade_date = '{start_date}'"
-      stock_df = pd.read_sql(sql, dbConnection)
+      stock_df = pd.read_sql_query(sql, dbConnection)
       if stock_df.empty:
         raise Exception(f"No data for {sql}")
       result_df_list.append(stock_df)
