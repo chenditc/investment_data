@@ -1,9 +1,14 @@
 set -e
 set -x
-cd /investment_data/
+cd /dolt/investment_data
 dolt pull origin
 
 dolt sql-server &
+
+# wait for sql server start
+sleep 5s
+
+cd /investment_data
 mkdir ./qlib/qlib_source
 python3 ./qlib/dump_all_to_qlib_source.py
 

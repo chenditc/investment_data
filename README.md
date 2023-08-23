@@ -5,22 +5,19 @@ Chinese blog about this project: [量化系列2 - 众包数据集](https://mp.we
 
 - [How to use it](#how-to-use-it)
 - [Developement Setup](#developement-setup)
-  * [Install dolt](#install-dolt)
-  * [Clone data](#clone-data)
-  * [Export to qlib format](#export-to-qlib-format)
-  * [Run Daily Update](#run-daily-update)
-  * [Daily update and output](#daily-update-and-output)
-  * [Extract tar file to qlib directory](#extract-tar-file-to-qlib-directory)
+  - [Install dolt](#install-dolt)
+  - [Clone data](#clone-data)
+  - [Export to qlib format](#export-to-qlib-format)
+  - [Run Daily Update](#run-daily-update)
+  - [Daily update and output](#daily-update-and-output)
+  - [Extract tar file to qlib directory](#extract-tar-file-to-qlib-directory)
 - [Initiative](#initiative)
 - [Project Detail](#project-detail)
-  * [Data Source](#data-source)
-  * [Initial import](#initial-import)
-  * [Daily Update](#daily-update)
-  * [Merge logic](#merge-logic)
-  * [Validation logic](#validation-logic)
+  - [Data Source](#data-source)
+  - [Initial loading and Validation logic for each table](#initial-loading-and-validation-logic-for-each-table)
 - [Contribution Guide](#contribution-guide)
-  * [Add more stock index](#add-more-stock-index)
-  * [Add more data source or fields](#Add-more-data-source-or-fields)
+  - [Add more stock index](#add-more-stock-index)
+  - [Add more data source or fields](#add-more-data-source-or-fields)
 
 <small><i><a href='http://ecotrust-canada.github.io/markdown-toc/'>Table of contents generated with markdown-toc</a></i></small>
 
@@ -48,7 +45,10 @@ To download as dolt database:
 
 ## Export to qlib format
 ```
-docker run -v /<some output directory>:/output -it --rm chenditc/investment_data bash dump_qlib_bin.sh && cp ./qlib_bin.tar.gz /output/
+docker run 
+  -v /<some output directory>:/output
+  -v /<dolt directory>:/dolt 
+  -it --rm chenditc/investment_data bash dump_qlib_bin.sh && cp ./qlib_bin.tar.gz /output/
 ```
 
 ## Run Daily Update
