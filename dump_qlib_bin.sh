@@ -1,17 +1,10 @@
 set -e
 set -x
 
-while getopts "c" opt
-do
-    case "$opt" in
-        c )
-        cd /dolt/
-        dolt clone chenditc/investment_data
-    ;;
-    esac
-done
+[ ! -d "/dolt/investment_data" ] && cd /dolt && dolt clone chenditc/investment_data
 
 cd /dolt/investment_data
+dolt pull origin
 dolt sql-server &
 
 # wait for sql server start
