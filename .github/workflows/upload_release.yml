@@ -23,7 +23,7 @@ jobs:
         image: chenditc/investment_data:latest
         options: -v ${{ github.workspace }}:/output
         run: |
-          bash -c "bash dump_qlib_bin.sh && cp ./qlib_bin.tar.gz /output/"
+          bash -c "bash dump_qlib_bin.sh -c && cp ./qlib_bin.tar.gz /output/"
     - name: Upload binaries to release
       uses: svenstaro/upload-release-action@v2
       with:

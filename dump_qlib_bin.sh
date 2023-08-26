@@ -1,8 +1,17 @@
 set -e
 set -x
-cd /dolt/investment_data
-dolt pull origin
 
+while getopts "c" opt
+do
+    case "$opt" in
+        c )
+        cd /dolt/
+        dolt clone chenditc/investment_data
+    ;;
+    esac
+done
+
+cd /dolt/investment_data
 dolt sql-server &
 
 # wait for sql server start
