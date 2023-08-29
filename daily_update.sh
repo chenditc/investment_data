@@ -2,7 +2,7 @@ set -e
 set -x
 
 [ ! -d "/dolt/investment_data" ] && echo "initializing dolt repo" && cd /dolt && dolt clone chenditc/investment_data
-cd /dolt
+cd /dolt/investment_data
 
 echo "Updating index weight"
 startdate=$(dolt sql -q "select * from max_index_date" -r csv | tail -1)
