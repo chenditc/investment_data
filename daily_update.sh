@@ -1,7 +1,7 @@
 set -e
 set -x
 
-dolt pull origin
+dolt init || dolt remote add origin chenditc/investment_data || dolt pull origin
 
 echo "Updating index weight"
 startdate=$(dolt sql -q "select * from max_index_date" -r csv | tail -1)
