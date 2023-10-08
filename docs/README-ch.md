@@ -27,8 +27,8 @@
 1. 从GitHub上的最新发布页面下载tar压缩文件
 2. 将tar文件解压到默认的qlib目录
 ```
-wget https://github.com/chenditc/investment_data/releases/download/2023-04-20/qlib_bin.tar.gz
-tar -zxvf qlib_bin.tar.gz -C ~/.qlib/qlib_data/cn_data --strip-components=2
+wget https://github.com/chenditc/investment_data/releases/download/2023-10-08/qlib_bin.tar.gz
+tar -zxvf qlib_bin.tar.gz -C ~/.qlib/qlib_data/cn_data --strip-components=1
 ```
 
 # 开发设置
