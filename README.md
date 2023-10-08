@@ -26,8 +26,8 @@ Chinese blog about this project: [量化系列2 - 众包数据集](https://mp.we
 1. Download tar ball from latest release page on github
 2. Extract tar file to default qlib directory
 ```
-wget https://github.com/chenditc/investment_data/releases/download/2023-04-20/qlib_bin.tar.gz
-tar -zxvf qlib_bin.tar.gz -C ~/.qlib/qlib_data/cn_data --strip-components=2
+wget https://github.com/chenditc/investment_data/releases/download/2023-10-08/qlib_bin.tar.gz
+tar -zxvf qlib_bin.tar.gz -C ~/.qlib/qlib_data/cn_data --strip-components=1
 ```
 
 # Developement Setup
