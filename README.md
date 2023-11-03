@@ -70,7 +70,7 @@ docker run -v /<some output directory>:/output -it --rm chenditc/investment_data
 
 ## Extract tar file to qlib directory
 ```
-tar -zxvf qlib_bin.tar.gz -C ~/.qlib/qlib_data/cn_data --strip-components=2
+tar -zxvf qlib_bin.tar.gz -C ~/.qlib/qlib_data/cn_data --strip-components=1
 ```
 
 # Initiative
