@@ -1,6 +1,6 @@
 FROM continuumio/miniconda3
 
-RUN wget https://github.com/dolthub/dolt/releases/download/v0.75.12/dolt-linux-amd64.tar.gz -O /tmp/dolt-linux-amd64.tar.gz && cd /tmp && tar -zxvf /tmp/dolt-linux-amd64.tar.gz && cp /tmp/dolt-linux-amd64/bin/dolt /usr/bin/ && rm -rf /tmp/*
+RUN wget https://github.com/dolthub/dolt/releases/download/v1.30.4/dolt-linux-amd64.tar.gz -O /tmp/dolt-linux-amd64.tar.gz && cd /tmp && tar -zxvf /tmp/dolt-linux-amd64.tar.gz && cp /tmp/dolt-linux-amd64/bin/dolt /usr/bin/ && rm -rf /tmp/*
 RUN apt update && apt install -y git psmisc zip gcc g++
 RUN mkdir -p /dolt
 RUN mkdir -p /investment_data
