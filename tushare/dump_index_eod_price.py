@@ -42,6 +42,7 @@ def dump_index_data(start_date="19900101", end_date="20500101", skip_exists=True
         result_df = pandas.concat(result_df_list)
         result_df["tradedate"] = result_df["trade_date"]
         result_df["volume"] = result_df["vol"]
+        result_df["turn"] = result_df["turnover_rate"]
         result_df["symbol"] = result_df["ts_code"]
         result_df["adjclose"] = result_df["close"]
         result_df.to_csv(filename, index=False)
