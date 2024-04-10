@@ -31,7 +31,7 @@ def get_daily(trade_date):
 
 def dump_astock_data():
     sqlEngine = create_engine('mysql+pymysql://root:@127.0.0.1/investment_data', pool_recycle=3600)
-    dbConnection = sqlEngine.connect()
+    dbConnection = sqlEngine.raw_connection()
 
     sql = """
     select max(tradedate) as tradedate

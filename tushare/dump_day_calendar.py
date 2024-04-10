@@ -8,7 +8,7 @@ from pathlib import Path
 
 def dump_calendar_to_qlib_dir(qlib_dir, skip_exists=False):
   sqlEngine = create_engine('mysql+pymysql://root:@127.0.0.1/investment_data', pool_recycle=3600)
-  dbConnection = sqlEngine.connect()
+  dbConnection = sqlEngine.raw_connection()
 
   old_days_file =Path(qlib_dir) / "calendars/day.txt"
   old_calendar_df = pd.read_csv(old_days_file, header=None)
