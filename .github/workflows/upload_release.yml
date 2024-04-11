@@ -21,7 +21,7 @@ jobs:
         format: "YYYY-MM-DD"
     - name: Save current date
       id: date
-      run: echo "date=${{ steps.t1.outputs.time }}"" >> $GITHUB_OUTPUT
+      run: echo "date=${{ steps.t1.outputs.time }}" >> $GITHUB_OUTPUT
     - uses: addnab/docker-run-action@v3
       with:
         registry: docker.io
