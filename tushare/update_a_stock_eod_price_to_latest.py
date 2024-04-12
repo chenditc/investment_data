@@ -70,7 +70,7 @@ def dump_astock_data():
             "ts_code": "symbol"
         }
         data = ts_data.rename(columns=column_mapping)[list(column_mapping.values())]      
-        record_num = data.to_sql("ts_a_stock_eod_price", dbConnection, if_exists='append', index=False)
+        record_num = data.to_sql("ts_a_stock_eod_price", sqlEngine, if_exists='append', index=False)
         print(f"{trade_date} Updated: {record_num} records")
 
 if __name__ == '__main__':
