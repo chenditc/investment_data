@@ -23,6 +23,11 @@
 
 <small><i><a href='http://ecotrust-canada.github.io/markdown-toc/'>使用markdown-toc生成的目录</a></i></small>
 
+# 特别感谢
+
+感谢 [dmnsn7](https://github.com/dmnsn7) 提供的 tushare token，保证了 tushare 数据源的持续更新。
+
+
 # 如何使用
 1. 从GitHub上的最新发布页面下载tar压缩文件
 2. 将tar文件解压到默认的qlib目录
