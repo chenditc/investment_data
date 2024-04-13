@@ -22,7 +22,7 @@ Chinese blog about this project: [量化系列2 - 众包数据集](https://mp.we
 <small><i><a href='http://ecotrust-canada.github.io/markdown-toc/'>Table of contents generated with markdown-toc</a></i></small>
 
 # Special thanks
-To: (dmnsn7)[https://github.com/dmnsn7] Who provided tushare token and make daily update possible.
+To: [dmnsn7](https://github.com/dmnsn7) Who provided tushare token and make daily update possible.
 
 # How to use it
 1. Download tar ball from latest release page on github
