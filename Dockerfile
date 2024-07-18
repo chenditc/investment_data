@@ -8,7 +8,7 @@ RUN mkdir -p /investment_data
 RUN cd /investment_data && git init && git pull https://github.com/chenditc/investment_data.git
 RUN  pip install numpy && pip install --upgrade cython \
    && cd / && git clone https://github.com/microsoft/qlib.git \
-   && cd /qlib/ && pip install . && pip install -r scripts/data_collector/yahoo/requirements.txt
+   && cd /qlib/ && pip install . && pip install -r scripts/data_collector/yahoo/requirements.txt && rm scripts/data_collector/br_index/requirements.txt
 COPY ./requirements.txt /tmp/requirements.txt
 RUN pip install -r /tmp/requirements.txt
 COPY . /investment_data/
