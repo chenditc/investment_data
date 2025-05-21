@@ -24,7 +24,7 @@ jobs:
       with:
         registry: docker.io
         image: chenditc/investment_data:latest
-        options: -v /mnt/c/github_runner/investment_data/investment_data/:/output -v dolt:/dolt
+        options: -v ${{ github.workspace }}:/output -v dolt:/dolt
         run: |
           bash -c "bash dump_qlib_bin.sh && ls -lh /output/"
     - name: Upload binaries to release
