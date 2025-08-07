@@ -26,7 +26,7 @@ python3 ./qlib/dump_all_to_qlib_source.py
 
 export PYTHONPATH=$PYTHONPATH:$WORKING_DIR/qlib/scripts
 python3 ./qlib/normalize.py normalize_data --source_dir ./qlib/qlib_source/ --normalize_dir ./qlib/qlib_normalize --max_workers=16 --date_field_name="tradedate" 
-python3 $WORKING_DIR/qlib/scripts/dump_bin.py dump_all --csv_path ./qlib/qlib_normalize/ --qlib_dir $WORKING_DIR/qlib_bin --date_field_name=tradedate --exclude_fields=tradedate,symbol
+python3 $WORKING_DIR/qlib/scripts/dump_bin.py dump_all --data_path ./qlib/qlib_normalize/ --qlib_dir $WORKING_DIR/qlib_bin --date_field_name=tradedate --exclude_fields=tradedate,symbol
 
 mkdir -p ./qlib/qlib_index/
 python3 ./qlib/dump_index_weight.py 
