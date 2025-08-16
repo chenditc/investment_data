@@ -12,6 +12,7 @@
 Currently the daily update is only using tushare data source and triggered by github action.
 1. I maintained a offline job whcih runs [daily_update.sh](daily_update.sh) every 30 mins to collect data and push to dolthub.
 2. A github action [.github/workflows/upload_release.yml](.github/workflows/upload_release.yml) is triggered daily, which then calls bash dump_qlib_bin.sh to generate daily tar file and upload to release page.
+   The same process can be executed manually inside the container by running [upload_release.sh](../upload_release.sh), which expects a `GITHUB_PAT` environment variable and uploads the generated tarball to GitHub.
 
 ## Merge logic
 1. Use w data source as baseline, use other data source to validate against it.

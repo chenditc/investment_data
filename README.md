@@ -70,6 +70,13 @@ bash daily_update.sh
 docker run -v /<some output directory>:/output -it --rm chenditc/investment_data bash daily_update.sh && bash dump_qlib_bin.sh && cp ./qlib_bin.tar.gz /output/
 ```
 
+## Upload to GitHub release
+Generate the tarball and upload it to the repository's release page without GitHub Actions:
+
+```
+docker run --rm -e GITHUB_PAT=<token> chenditc/investment_data bash upload_release.sh
+```
+
 ## Extract tar file to qlib directory
 ```
 tar -zxvf qlib_bin.tar.gz -C ~/.qlib/qlib_data/cn_data --strip-components=1
