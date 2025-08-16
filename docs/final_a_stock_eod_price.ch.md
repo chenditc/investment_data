@@ -11,6 +11,7 @@
 目前，每日更新仅使用tushare数据源，并由github action触发。
 1. 我维护了一个离线任务，它每30分钟运行一次[daily_update.sh](daily_update.sh)以收集数据并推送到dolthub。
 2. 一个github action [.github/workflows/upload_release.yml](.github/workflows/upload_release.yml)每日触发，然后调用bash dump_qlib_bin.sh生成每日tar文件并上传到发布页面。
+   同样的流程也可以在容器内手动执行，运行[upload_release.sh](../upload_release.sh)并提供`GITHUB_PAT`环境变量即可将生成的tar文件上传到GitHub。
 
 ## 合并逻辑
 1. 使用w数据源作为基准，使用其他数据源进行验证。
