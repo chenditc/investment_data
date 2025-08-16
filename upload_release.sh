@@ -20,7 +20,7 @@ BODY="Daily update release"
 # Run dump script to generate the tarball
 bash dump_qlib_bin.sh
 
-FILE_PATH="")(pwd)/${ASSET_NAME}"
+FILE_PATH="$(pwd)/${ASSET_NAME}"
 if [[ ! -f "${FILE_PATH}" ]]; then
   echo "Error: ${FILE_PATH} not found" >&2
   exit 1
