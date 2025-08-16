@@ -24,7 +24,7 @@ if ! command -v jq >/dev/null 2>&1; then
 fi
 
 # Run dump script to generate the tarball
-bash dump_qlib_bin.sh "$(pwd)"
+bash dump_qlib_bin.sh
 
 FILE_PATH="$(pwd)/${ASSET_NAME}"
 if [[ ! -f "${FILE_PATH}" ]]; then
