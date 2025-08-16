@@ -17,10 +17,16 @@ DATE=$(date +%F)
 ASSET_NAME="qlib_bin.tar.gz"
 BODY="Daily update release"
 
-# Run dump script to generate the tarball
-bash dump_qlib_bin.sh
+# Ensure jq is available
+if ! command -v jq >/dev/null 2>&1; then
+  echo "Error: jq is required but not installed." >&2
+  exit 1
+fi
 
-FILE_PATH="")(pwd)/${ASSET_NAME}"
+# Run dump script to generate the tarball
+bash dump_qlib_bin.sh "$(pwd)"
+
+FILE_PATH="$(pwd)/${ASSET_NAME}"
 if [[ ! -f "${FILE_PATH}" ]]; then
   echo "Error: ${FILE_PATH} not found" >&2
   exit 1
@@ -30,7 +36,7 @@ API="https://api.github.com/repos/${REPO}"
 AUTH_HEADER="Authorization: token ${TOKEN}"
 
 # Get or create release
-RELEASE_ID=$(curl -fsSL -H "${AUTH_HEADER}" "${API}/releases/tags/${DATE}" | jq -r '.id' 2>/dev/null || true)
+RELEASE_ID=$(curl -sSL -H "${AUTH_HEADER}" "${API}/releases/tags/${DATE}" | jq -r '.id' 2>/dev/null || true)
 if [[ -z "${RELEASE_ID}" || "${RELEASE_ID}" == "null" ]]; then
   RELEASE_ID=$(curl -fsSL -H "${AUTH_HEADER}" -H 'Content-Type: application/json' \
     -d "{\"tag_name\":\"${DATE}\",\"name\":\"${DATE}\",\"body\":\"${BODY}\"}" \

@@ -37,8 +37,10 @@ cp qlib/qlib_index/csi* $WORKING_DIR/qlib_bin/instruments/
 
 tar -czvf ./qlib_bin.tar.gz $WORKING_DIR/qlib_bin/
 ls -lh ./qlib_bin.tar.gz
-if [ -d "/output" ]; then
-    mv ./qlib_bin.tar.gz /output/
+OUTPUT_DIR=${OUTPUT_DIR:-/output}
+if [ -d "${OUTPUT_DIR}" ]; then
+    mv ./qlib_bin.tar.gz "${OUTPUT_DIR}/"
+    ls -lh "${OUTPUT_DIR}/qlib_bin.tar.gz"
 else
-    echo "Directory /output does not exist."
+    echo "Generated tarball at $(pwd)/qlib_bin.tar.gz"
 fi
