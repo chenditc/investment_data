@@ -11,16 +11,7 @@ if [[ -z "${TOKEN}" ]]; then
 fi
 
 # Determine repository (owner/repo)
-REPO="${GITHUB_REPOSITORY:-}" 
-if [[ -z "${REPO}" ]]; then
-  # Try to parse from git config
-  ORIGIN_URL=$(git config --get remote.origin.url)
-  REPO=$(echo "$ORIGIN_URL" | sed -n 's#.*github.com[/:]\(.*\)\.git#\1#p')
-fi
-if [[ -z "${REPO}" ]]; then
-  echo "Error: could not determine repository." >&2
-  exit 1
-fi
+REPO="${REPO:-${GITHUB_REPOSITORY:-chenidtc/investment_data}}"
 
 DATE=$(date +%F)
 ASSET_NAME="qlib_bin.tar.gz"
@@ -29,7 +20,7 @@ BODY="Daily update release"
 # Run dump script to generate the tarball
 bash dump_qlib_bin.sh
 
-FILE_PATH="$(pwd)/${ASSET_NAME}"
+FILE_PATH="")(pwd)/${ASSET_NAME}"
 if [[ ! -f "${FILE_PATH}" ]]; then
   echo "Error: ${FILE_PATH} not found" >&2
   exit 1
