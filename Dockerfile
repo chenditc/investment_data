@@ -1,7 +1,7 @@
 FROM python:3.9
 
 RUN wget https://github.com/dolthub/dolt/releases/download/v1.30.4/dolt-linux-amd64.tar.gz -O /tmp/dolt-linux-amd64.tar.gz && cd /tmp && tar -zxvf /tmp/dolt-linux-amd64.tar.gz && cp /tmp/dolt-linux-amd64/bin/dolt /usr/bin/ && rm -rf /tmp/* && dolt config --global --add user.email "dockeruser@na.com" && dolt config --global --add user.name "dockeruser"
-RUN apt update && apt install -y git psmisc zip gcc g++
+RUN apt update && apt install -y git psmisc zip gcc g++ jq
 RUN mkdir -p /dolt
 RUN mkdir -p /investment_data
 

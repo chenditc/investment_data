@@ -9,9 +9,13 @@ if [[ -z "${TOKEN}" ]]; then
   echo "Error: GITHUB_PAT environment variable is not set." >&2
   exit 1
 fi
+if ! command -v jq >/dev/null 2>&1; then
+  echo "Error: jq is required but not installed." >&2
+  exit 1
+fi
 
 # Determine repository (owner/repo)
-REPO="${REPO:-${GITHUB_REPOSITORY:-chenidtc/investment_data}}"
+REPO="${REPO:-${GITHUB_REPOSITORY:-chenditc/investment_data}}"
 
 DATE=$(date +%F)
 ASSET_NAME="qlib_bin.tar.gz"
@@ -20,7 +24,7 @@ BODY="Daily update release"
 # Run dump script to generate the tarball
 bash dump_qlib_bin.sh
 
-FILE_PATH="")(pwd)/${ASSET_NAME}"
+FILE_PATH="$(pwd)/${ASSET_NAME}"
 if [[ ! -f "${FILE_PATH}" ]]; then
   echo "Error: ${FILE_PATH} not found" >&2
   exit 1
