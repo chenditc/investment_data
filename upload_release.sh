@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -exuo pipefail
 
 # Generate qlib bin tarball and upload it as a GitHub release asset.
 # Requires a GitHub personal access token in $GITHUB_PAT (or $GH_TOKEN / $GITHUB_TOKEN).
