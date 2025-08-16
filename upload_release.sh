@@ -11,7 +11,7 @@ if [[ -z "${TOKEN}" ]]; then
 fi
 
 # Determine repository (owner/repo)
-REPO="${REPO:-${GITHUB_REPOSITORY:-chenidtc/investment_data}}"
+REPO="${REPO:-${GITHUB_REPOSITORY:-chenditc/investment_data}}"
 
 DATE=$(date +%F)
 ASSET_NAME="qlib_bin.tar.gz"
