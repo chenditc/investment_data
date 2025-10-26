@@ -1,6 +1,14 @@
 #!/usr/bin/env bash
 set -exuo pipefail
 
+# Configure git proxy if http_proxy or https_proxy are set
+if [[ -n "${http_proxy-}" ]]; then
+  git config --global http.proxy "${http_proxy}"
+fi
+if [[ -n "${https_proxy-}" ]]; then
+  git config --global https.proxy "${https_proxy}"
+fi
+
 # Generate qlib bin tarball and upload it as a GitHub release asset.
 # Requires a GitHub personal access token in $GITHUB_PAT (or $GH_TOKEN / $GITHUB_TOKEN).
 
