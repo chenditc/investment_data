@@ -24,7 +24,7 @@ jobs:
       with:
         registry: docker.io
         image: chenditc/investment_data:latest
-        options: -v ${{ github.workspace }}:/output -v dolt:/dolt
+        options: -v ${{ github.workspace }}:/output -v dolt:/dolt -e "HTTP_PROXY=$HTTP_PROXY" -e "http_proxy=$http_proxy" -e "HTTPS_PROXY=$HTTPS_PROXY" -e "https_proxy=$https_proxy"
         run: |
           bash -c "bash dump_qlib_bin.sh && ls -lh /output/"
     - name: Upload binaries to release
