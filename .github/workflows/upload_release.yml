@@ -21,13 +21,6 @@ jobs:
       id: date
       run: echo "date=${{ steps.t1.outputs.time }}" >> $GITHUB_OUTPUT
     - uses: addnab/docker-run-action@v3
-      env:
-        HTTP_PROXY:  ${{ env.HTTP_PROXY }}
-        http_proxy:  ${{ env.http_proxy }}
-        HTTPS_PROXY: ${{ env.HTTPS_PROXY }}
-        https_proxy: ${{ env.https_proxy }}
-        NO_PROXY:    ${{ env.NO_PROXY }}
-        no_proxy:    ${{ env.no_proxy }}
       with:
         registry: docker.io
         image: chenditc/investment_data:latest
