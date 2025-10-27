@@ -25,11 +25,14 @@ mkdir -p ./qlib/qlib_source
 python3 ./qlib/dump_all_to_qlib_source.py
 
 export PYTHONPATH=$PYTHONPATH:$WORKING_DIR/qlib/scripts
-python3 ./qlib/normalize.py normalize_data --source_dir ./qlib/qlib_source/ --normalize_dir ./qlib/qlib_normalize --max_workers=16 --date_field_name="tradedate" 
-python3 $WORKING_DIR/qlib/scripts/dump_bin.py dump_all --data_path ./qlib/qlib_normalize/ --qlib_dir $WORKING_DIR/qlib_bin --date_field_name=tradedate --exclude_fields=tradedate,symbol
+cd ./qlib
+python3 ./normalize.py normalize_data --source_dir ./qlib_source/ --normalize_dir ./qlib_normalize --max_workers=16 --date_field_name="tradedate" 
+python3 $WORKING_DIR/qlib/scripts/dump_bin.py dump_all --data_path ./qlib_normalize/ --qlib_dir $WORKING_DIR/qlib_bin --date_field_name=tradedate --exclude_fields=tradedate,symbol
 
-mkdir -p ./qlib/qlib_index/
-python3 ./qlib/dump_index_weight.py 
+mkdir -p ./qlib_index/
+python3 ./dump_index_weight.py 
+
+cd $WORKING_DIR/investment_data
 python3 ./tushare/dump_day_calendar.py $WORKING_DIR/qlib_bin/
 killall dolt
 
