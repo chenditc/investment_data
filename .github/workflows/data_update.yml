@@ -15,12 +15,10 @@ jobs:
       with:
         registry: docker.io
         image: chenditc/investment_data:latest
-        options: --pull always -v ${{ github.workspace }}/dolt:/dolt
+        options: --pull always -v dolt_update:/dolt
         run: |
           # Set up Dolt configurations from secrets
           mkdir -p /root/.dolt/creds
-          echo '${{ secrets.DOLT_CONFIG_GLOBAL_JSON }}'
-          echo '${{ secrets.DOLT_JWK }}'
           echo '${{ secrets.DOLT_CONFIG_GLOBAL_JSON }}' > /root/.dolt/config_global.json
           echo '${{ secrets.DOLT_JWK }}' > /root/.dolt/creds/j6ooicvf6t6a0c18pinnr0p6ao69eglbcsfmmh2247d50.jwk
 
