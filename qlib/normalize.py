@@ -21,6 +21,8 @@ class CrowdSourceNormalize(yahoo_collector.YahooNormalizeCN1d):
     return result_df
 
 def normalize_crowd_source_data(source_dir=None, normalize_dir=None, max_workers=1, interval="1d", date_field_name="tradedate", symbol_field_name="symbol"):
+    import multiprocessing as mp
+    mp.set_start_method("spawn", force=True)
     yc = Normalize(
         source_dir=source_dir,
         target_dir=normalize_dir,
