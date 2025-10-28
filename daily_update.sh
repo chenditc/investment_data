@@ -3,8 +3,8 @@ set -x
 
 [ ! -d "/dolt/investment_data" ] && echo "initializing dolt repo" && cd /dolt && dolt clone chenditc/investment_data
 cd /dolt/investment_data
-dolt pull
-dolt push
+dolt pull origin master
+dolt push origin master
 
 echo "Updating index weight"
 startdate=$(dolt sql -q "select * from max_index_date" -r csv | tail -1)
@@ -39,7 +39,7 @@ else
     echo "Changes found. Committing and pushing..."
     # Run the necessary commands
     dolt commit -m "Daily update"
-    dolt push 
+    dolt push origin master
     echo "Changes committed and pushed."
 fi
 
