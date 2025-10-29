@@ -5,6 +5,7 @@ set -x
 cd /dolt/investment_data
 dolt fetch origin master
 dolt reset origin/master
+dolt checkout .
 
 echo "Updating index weight"
 startdate=$(dolt sql -q "select * from max_index_date" -r csv | tail -1)
