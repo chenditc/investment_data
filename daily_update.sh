@@ -40,7 +40,7 @@ else
     echo "Changes found. Committing and pushing..."
     # Run the necessary commands
     dolt commit -m "Daily update"
-    dolt push origin master
+    dolt push --force origin master
     echo "Changes committed and pushed."
 fi
 
