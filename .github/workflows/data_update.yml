@@ -15,7 +15,7 @@ jobs:
       with:
         registry: docker.io
         image: chenditc/investment_data:latest
-        options: --pull always -v dolt_update:/dolt
+        options: --pull always -v dolt_update:/dolt --rm
         run: |
           # Set up Dolt configurations from secrets
           mkdir -p /root/.dolt/creds
