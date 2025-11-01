@@ -24,6 +24,15 @@ Chinese blog about this project: [量化系列2 - 众包数据集](https://mp.we
 # Special thanks
 To: [dmnsn7](https://github.com/dmnsn7) Who provided tushare token and make daily update possible.
 
+# Sponsor
+To continue maintain the CI/CD pipeline for this project, we need VPS with 30G+ memory, 4 core+ CPU and good connection to dolthub and github.
+
+If you are willing to sponsor the running environment, please contact me directly.
+
+If you are willing to sponsor the VPS fee, you can donate in this page: https://mp.weixin.qq.com/s/Athd5hsiN_hIKKgxIiO_ow
+
+Thanks for everyone's help.
+
 # How to use it
 1. Download tar ball from latest release page on github
 2. Extract tar file to default qlib directory
