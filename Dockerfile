@@ -12,4 +12,15 @@ RUN  pip install numpy==1.23.5 && pip install --upgrade cython \
 COPY ./requirements.txt /tmp/requirements.txt
 RUN pip install -r /tmp/requirements.txt
 COPY . /investment_data/
+
+# Add a global sitecustomize.py so every Python process defaults to "spawn"
+RUN printf '%s\n' \
+'import multiprocessing as mp' \
+'try:' \
+'    mp.set_start_method("spawn")' \
+'except RuntimeError:' \
+'    # Already set by someone else (or on Windows/macOS default)' \
+'    pass' \
+> /usr/local/lib/python3.9/site-packages/sitecustomize.py
+
 WORKDIR /investment_data/
