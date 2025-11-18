@@ -45,6 +45,7 @@ def dump_index_data(start_date=None, end_date=None, skip_exists=True):
             index_start_date += time_step
             index_end_date += time_step
             if df.empty:
+                print("Empty index data:", index_name, index_start_date)
                 continue
             result_df_list.append(df)
             time.sleep(0.5)
