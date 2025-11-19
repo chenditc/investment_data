@@ -51,6 +51,7 @@ def dump_index_data(start_date=None, end_date=None, skip_exists=True):
                 if empty_index_data_count >= 20:
                     print("Index data empty for 20 consecutive fetches. Stop fetching for:", index_name)
                     break
+                time.sleep(0.5)
                 continue
             empty_index_data_count = 0
             result_df_list.append(df)
