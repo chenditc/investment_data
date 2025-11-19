@@ -40,13 +40,19 @@ def dump_index_data(start_date=None, end_date=None, skip_exists=True):
         filename = f'{file_path}/index_weight/{index_name}.csv'
         print("Dump to: ", filename)
         result_df_list = []
+        empty_index_data_count = 0
         while index_end_date < datetime.datetime.now():
             df = pro.index_weight(index_code=index_name, start_date = index_start_date.strftime('%Y%m%d'), end_date=index_end_date.strftime('%Y%m%d'))
             index_start_date += time_step
             index_end_date += time_step
             if df.empty:
-                print("Empty index data:", index_name, index_start_date)
+                empty_index_data_count += 1
+                print("Empty index data:", index_name, index_start_date, empty_index_data_count)
+                if empty_index_data_count >= 20:
+                    print("Index data empty for 20 consecutive fetches. Stop fetching for:", index_name)
+                    break
                 continue
+            empty_index_data_count = 0
             result_df_list.append(df)
             time.sleep(0.5)
         if len(result_df_list) == 0:
