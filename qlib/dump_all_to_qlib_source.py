@@ -4,7 +4,7 @@ import pandas as pd
 import fire
 import os
 
-def dump_all_to_sqlib_source(skip_exists=True):
+def dump_all_to_sqlib_source(skip_exists=False):
   sqlEngine = create_engine('mysql+pymysql://root:@127.0.0.1/investment_data', pool_recycle=3600)
   dbConnection = sqlEngine.raw_connection()
   stock_df = pd.read_sql("select *, amount/volume*10 as vwap from final_a_stock_eod_price", dbConnection)
