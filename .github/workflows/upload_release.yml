@@ -20,13 +20,26 @@ jobs:
     - name: Save current date
       id: date
       run: echo "date=${{ steps.t1.outputs.time }}" >> $GITHUB_OUTPUT
-    - uses: addnab/docker-run-action@v3
-      with:
-        registry: docker.io
-        image: chenditc/investment_data:latest
-        options: --rm --name upload_tar --pull always -v ${{ github.workspace }}:/output -v dolt-vol:/dolt -e HTTP_PROXY -e http_proxy -e HTTPS_PROXY -e https_proxy -e NO_PROXY -e no_proxy
-        run: |
-          bash -cxe "git config --global http.proxy ${http_proxy} && git config --global https.proxy ${https_proxy} && bash dump_qlib_bin.sh && ls -lh /output/"
+    - name: Build qlib binary archive
+      run: |
+        set -euo pipefail
+        docker rm -f upload_tar >/dev/null 2>&1 || true
+        docker run --rm --name upload_tar --pull always \
+          -v "${{ github.workspace }}:/output" \
+          -v dolt-vol:/dolt \
+          -e HTTP_PROXY \
+          -e http_proxy \
+          -e HTTPS_PROXY \
+          -e https_proxy \
+          -e NO_PROXY \
+          -e no_proxy \
+          -e CHECK_FRESHNESS=1 \
+          chenditc/investment_data:latest \
+          bash -lc 'set -euo pipefail
+          git config --global http.proxy "${http_proxy:-}"
+          git config --global https.proxy "${https_proxy:-}"
+          bash dump_qlib_bin.sh
+          ls -lh /output/'
     - name: Upload binaries to release
       uses: svenstaro/upload-release-action@v2
       with:
