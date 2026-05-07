@@ -4,7 +4,7 @@ set -x
 [ ! -d "/dolt/investment_data" ] && echo "initializing dolt repo" && cd /dolt && dolt clone chenditc/investment_data
 cd /dolt/investment_data
 dolt fetch origin master
-dolt reset origin/master
+dolt reset --hard origin/master
 dolt checkout .
 
 echo "Updating index weight"
@@ -43,4 +43,3 @@ else
     dolt push --force origin master
     echo "Changes committed and pushed."
 fi
-

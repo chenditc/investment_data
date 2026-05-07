@@ -11,16 +11,23 @@ jobs:
 
     steps:
     - name: Run daily update script in container
-      uses: addnab/docker-run-action@v3
-      with:
-        registry: docker.io
-        image: chenditc/investment_data:latest
-        options: --pull always --name daily_dolt_update -v dolt_update:/dolt --rm
-        run: |
-          # Set up Dolt configurations from secrets
+      env:
+        DOLT_CONFIG_GLOBAL_JSON: ${{ secrets.DOLT_CONFIG_GLOBAL_JSON }}
+        DOLT_JWK: ${{ secrets.DOLT_JWK }}
+        TUSHARE: ${{ secrets.TUSHARE }}
+      run: |
+        set -euo pipefail
+        docker rm -f daily_dolt_update >/dev/null 2>&1 || true
+        docker run --pull always --name daily_dolt_update -v dolt_update:/dolt --rm \
+          -e DOLT_CONFIG_GLOBAL_JSON \
+          -e DOLT_JWK \
+          -e TUSHARE \
+          chenditc/investment_data:latest \
+          bash -lc '
+          set -euo pipefail
           mkdir -p /root/.dolt/creds
-          echo '${{ secrets.DOLT_CONFIG_GLOBAL_JSON }}' > /root/.dolt/config_global.json
-          echo '${{ secrets.DOLT_JWK }}' > /root/.dolt/creds/j6ooicvf6t6a0c18pinnr0p6ao69eglbcsfmmh2247d50.jwk
+          printf "%s\n" "$DOLT_CONFIG_GLOBAL_JSON" > /root/.dolt/config_global.json
+          printf "%s\n" "$DOLT_JWK" > /root/.dolt/creds/j6ooicvf6t6a0c18pinnr0p6ao69eglbcsfmmh2247d50.jwk
 
-          # Execute the daily update script
-          bash -c "TUSHARE=${{ secrets.TUSHARE }} bash daily_update.sh"
+          bash daily_update.sh
+          '
