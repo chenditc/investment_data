@@ -8,7 +8,33 @@ dolt reset --hard origin/master
 dolt checkout .
 
 echo "Updating index weight"
-startdate=$(dolt sql -q "select * from max_index_date" -r csv | tail -1)
+# Keep this code list in sync with tushare/dump_index_weight.py.
+# We intentionally ignore stale legacy rows such as 000300.SH so they
+# do not drag the shared backfill start date back to 2022.
+startdate=$(dolt sql -q "
+SELECT MIN(index_max_date) AS start_date
+FROM (
+  SELECT DATE_FORMAT(DATE_ADD(COALESCE(MAX(trade_date), '19900101'), INTERVAL 1 DAY), '%Y%m%d') AS index_max_date
+  FROM ts_index_weight
+  WHERE index_code = '000905.SH'
+  UNION ALL
+  SELECT DATE_FORMAT(DATE_ADD(COALESCE(MAX(trade_date), '19900101'), INTERVAL 1 DAY), '%Y%m%d') AS index_max_date
+  FROM ts_index_weight
+  WHERE index_code = '399300.SZ'
+  UNION ALL
+  SELECT DATE_FORMAT(DATE_ADD(COALESCE(MAX(trade_date), '19900101'), INTERVAL 1 DAY), '%Y%m%d') AS index_max_date
+  FROM ts_index_weight
+  WHERE index_code = '000906.SH'
+  UNION ALL
+  SELECT DATE_FORMAT(DATE_ADD(COALESCE(MAX(trade_date), '19900101'), INTERVAL 1 DAY), '%Y%m%d') AS index_max_date
+  FROM ts_index_weight
+  WHERE index_code = '000852.SH'
+  UNION ALL
+  SELECT DATE_FORMAT(DATE_ADD(COALESCE(MAX(trade_date), '19900101'), INTERVAL 1 DAY), '%Y%m%d') AS index_max_date
+  FROM ts_index_weight
+  WHERE index_code = '000985.SH'
+) current_index_weight_dates
+" -r csv | tail -1)
 python3 /investment_data/tushare/dump_index_weight.py --start_date=$startdate
 for file in $(ls /investment_data/tushare/index_weight/); 
 do  

@@ -10,6 +10,7 @@ ts.set_token(os.environ["TUSHARE"])
 pro=ts.pro_api()
 file_path = os.path.dirname(os.path.realpath(__file__))
 
+# Keep this list in sync with the start-date query in daily_update.sh.
 index_list = [
     '000905.SH', # csi500
     '399300.SZ', # csi300
