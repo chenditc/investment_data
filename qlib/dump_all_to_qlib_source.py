@@ -12,9 +12,11 @@ def dump_all_to_sqlib_source(skip_exists=False):
   sqlEngine.dispose()
 
   script_path = os.path.dirname(os.path.realpath(__file__))
+  output_dir = os.environ.get("QLIB_SOURCE_DIR", f'{script_path}/qlib_source')
+  os.makedirs(output_dir, exist_ok=True)
 
   for symbol, df in stock_df.groupby("symbol"):
-    filename = f'{script_path}/qlib_source/{symbol}.csv'
+    filename = f'{output_dir}/{symbol}.csv'
     print("Dumping to file: ", filename)
     if skip_exists and os.path.isfile(filename):
         continue

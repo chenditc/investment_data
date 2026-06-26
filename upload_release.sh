@@ -24,6 +24,17 @@ REPO="${REPO:-${GITHUB_REPOSITORY:-chenditc/investment_data}}"
 DATE="${DATE:-$(date +%F)}"
 ASSET_NAME="qlib_bin.tar.gz"
 BODY="Daily update release"
+LOCK_FILE="${UPLOAD_RELEASE_LOCK_FILE:-/tmp/investment_data_upload_release.lock}"
+
+if command -v flock >/dev/null 2>&1; then
+  exec 9>"${LOCK_FILE}"
+  if ! flock -n 9; then
+    echo "Another upload_release.sh is already running; skipping release ${DATE} at $(date -Is)." >&2
+    exit 0
+  fi
+else
+  echo "Warning: flock is not available; continuing without upload_release lock." >&2
+fi
 
 # Ensure jq is available
 if ! command -v jq >/dev/null 2>&1; then

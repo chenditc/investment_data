@@ -18,9 +18,11 @@ def dump_all_to_sqlib_source(skip_exists=False):
   }
 
   script_path = os.path.dirname(os.path.realpath(__file__))
+  output_dir = os.environ.get("QLIB_INDEX_DIR", f'{script_path}/qlib_index')
+  os.makedirs(output_dir, exist_ok=True)
 
   for index_name, index_code in index_map.items():
-    filename = f'{script_path}/qlib_index/{index_name}.txt'
+    filename = f'{output_dir}/{index_name}.txt'
     if skip_exists and os.path.isfile(filename):
         continue
 
