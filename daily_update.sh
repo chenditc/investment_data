@@ -43,6 +43,7 @@ done
 
 echo "Updating index price"
 python3 /investment_data/tushare/dump_index_eod_price.py 
+dolt sql -q "DELETE FROM ts_a_stock_eod_price WHERE symbol = '000300.SH' AND tradedate = '2004-12-31' AND open = 0 AND high = 0 AND low = 0 AND close = 1000"
 for file in $(ls /investment_data/tushare/index/); 
 do   
   dolt table import -u ts_a_stock_eod_price /investment_data/tushare/index/$file; 
