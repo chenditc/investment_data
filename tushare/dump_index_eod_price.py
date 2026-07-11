@@ -18,20 +18,23 @@ def get_trade_cal(start_date, end_date):
     return df
 
 index_list = ['399300.SZ', '000905.SH', '000300.SH', '000906.SH', '000852.SH', '000985.SH']
-required_ohlc_fields = ["open", "high", "low", "close"]
+required_price_fields = ["open", "high", "low", "close", "vol", "amount"]
 
-def drop_incomplete_ohlc_rows(df, index_name):
-    missing_columns = [column for column in required_ohlc_fields if column not in df.columns]
+def drop_incomplete_price_rows(df, index_name):
+    missing_columns = [column for column in required_price_fields if column not in df.columns]
     if missing_columns:
-        raise ValueError(f"Missing required OHLC columns for {index_name}: {missing_columns}")
+        raise ValueError(f"Missing required price columns for {index_name}: {missing_columns}")
 
-    incomplete_mask = df[required_ohlc_fields].replace("", pandas.NA).isna().any(axis=1)
+    incomplete_mask = df[required_price_fields].replace("", pandas.NA).isna().any(axis=1)
     if incomplete_mask.any():
-        skipped_rows = df.loc[incomplete_mask, ["ts_code", "trade_date", *required_ohlc_fields]]
-        skipped_desc = ", ".join(
-            f"{row.ts_code} {row.trade_date}" for row in skipped_rows.itertuples(index=False)
-        )
-        print(f"Skipping {len(skipped_rows)} incomplete OHLC rows for {index_name}: {skipped_desc}")
+        skipped_rows = df.loc[incomplete_mask, ["ts_code", "trade_date", *required_price_fields]]
+        skipped_items = [
+            f"{row.ts_code} {row.trade_date}" for row in skipped_rows.head(10).itertuples(index=False)
+        ]
+        skipped_desc = ", ".join(skipped_items)
+        if len(skipped_rows) > len(skipped_items):
+            skipped_desc = f"{skipped_desc}, ..."
+        print(f"Skipping {len(skipped_rows)} incomplete price rows for {index_name}: {skipped_desc}")
         df = df.loc[~incomplete_mask].copy()
 
     return df
@@ -57,7 +60,7 @@ def dump_index_data(start_date="19900101", end_date="20500101", skip_exists=True
         if len(result_df_list) == 0:
             continue
         result_df = pandas.concat(result_df_list)
-        result_df = drop_incomplete_ohlc_rows(result_df, index_name)
+        result_df = drop_incomplete_price_rows(result_df, index_name)
         if result_df.empty:
             continue
         result_df["tradedate"] = result_df["trade_date"]
