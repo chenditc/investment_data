@@ -1,4 +1,4 @@
-FROM python:3.9
+FROM python:3.11
 
 ARG DOLT_VERSION=1.88.0
 RUN wget https://github.com/dolthub/dolt/releases/download/v${DOLT_VERSION}/dolt-linux-amd64.tar.gz -O /tmp/dolt-linux-amd64.tar.gz && cd /tmp && tar -zxvf /tmp/dolt-linux-amd64.tar.gz && cp /tmp/dolt-linux-amd64/bin/dolt /usr/bin/ && rm -rf /tmp/* && dolt config --global --add user.email "dockeruser@na.com" && dolt config --global --add user.name "dockeruser"
@@ -22,6 +22,6 @@ RUN printf '%s\n' \
 'except RuntimeError:' \
 '    # Already set by someone else (or on Windows/macOS default)' \
 '    pass' \
-> /usr/local/lib/python3.9/site-packages/sitecustomize.py
+> /usr/local/lib/python3.11/site-packages/sitecustomize.py
 
 WORKDIR /investment_data/
