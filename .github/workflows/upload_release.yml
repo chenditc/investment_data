@@ -22,7 +22,10 @@ jobs:
       run: echo "date=$(date -u +%F)" >> "$GITHUB_OUTPUT"
     - name: Build qlib binary archive
       env:
-        CHECK_FRESHNESS: "1"
+        # Keep the migrated workflow aligned with the legacy serv1 cron behavior.
+        # Data freshness is driven by the upstream data_update cadence rather than
+        # hard-failing release publication on the current calendar date.
+        CHECK_FRESHNESS: "0"
       run: |
         set -euo pipefail
         docker rm -f upload_tar >/dev/null 2>&1 || true
