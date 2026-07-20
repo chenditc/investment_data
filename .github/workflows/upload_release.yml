@@ -2,28 +2,31 @@ name: Upload latest data to github release
 
 on:
   workflow_dispatch:
-  # schedule:
-  #   - cron:  '0 10 * * *'
+  schedule:
+    - cron: '1 11 * * *' # 19:01 Asia/Shanghai, matches the legacy serv1 cron
+
+concurrency:
+  group: investment-data-release-upload
+  cancel-in-progress: false
 
 jobs:
-
   build:
-
-    runs-on: self-hosted
+    runs-on: investment-arc
+    timeout-minutes: 90
+    permissions:
+      contents: write
 
     steps:
-    - name: Get current date
-      id: t1
-      uses: Kaven-Universe/github-action-current-date-time@v1
-      with:
-        format: "YYYY-MM-DD"
-    - name: Save current date
+    - name: Get current UTC date
       id: date
-      run: echo "date=${{ steps.t1.outputs.time }}" >> $GITHUB_OUTPUT
+      run: echo "date=$(date -u +%F)" >> "$GITHUB_OUTPUT"
     - name: Build qlib binary archive
+      env:
+        CHECK_FRESHNESS: "1"
       run: |
         set -euo pipefail
         docker rm -f upload_tar >/dev/null 2>&1 || true
+        docker volume inspect dolt-vol >/dev/null 2>&1 || docker volume create dolt-vol >/dev/null
         docker run --rm --name upload_tar --pull always \
           -v "${{ github.workspace }}:/output" \
           -v dolt-vol:/dolt \
@@ -33,7 +36,7 @@ jobs:
           -e https_proxy \
           -e NO_PROXY \
           -e no_proxy \
-          -e CHECK_FRESHNESS=1 \
+          -e CHECK_FRESHNESS \
           chenditc/investment_data:latest \
           bash -lc 'set -euo pipefail
           git config --global http.proxy "${http_proxy:-}"

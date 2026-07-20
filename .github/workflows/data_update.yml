@@ -5,9 +5,14 @@ on:
   schedule:
     - cron: '30 * * * *' # Runs at 30 minutes past the hour, every hour
 
+concurrency:
+  group: investment-data-update
+  cancel-in-progress: false
+
 jobs:
   update-data:
-    runs-on: self-hosted
+    runs-on: investment-arc
+    timeout-minutes: 45
 
     steps:
     - name: Run daily update script in container
@@ -18,6 +23,7 @@ jobs:
       run: |
         set -euo pipefail
         docker rm -f daily_dolt_update >/dev/null 2>&1 || true
+        docker volume inspect dolt_update >/dev/null 2>&1 || docker volume create dolt_update >/dev/null
         docker run --pull always --name daily_dolt_update -v dolt_update:/dolt --rm \
           -e DOLT_CONFIG_GLOBAL_JSON \
           -e DOLT_JWK \
