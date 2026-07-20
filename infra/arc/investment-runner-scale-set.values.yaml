@@ -20,6 +20,8 @@ template:
           - dockerd
           - --host=unix:///var/run/docker.sock
           - --group=$(DOCKER_GROUP_GID)
+          - --dns=10.61.13.53
+          - --dns=10.59.90.55
         env:
           - name: DOCKER_GROUP_GID
             value: "123"
