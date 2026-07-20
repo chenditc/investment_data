@@ -65,7 +65,12 @@ cd ./qlib
 log_step "Normalizing qlib data with ${DUMP_QLIB_MAX_WORKERS} workers"
 python3 ./normalize.py normalize_data --source_dir "${QLIB_SOURCE_DIR}/" --normalize_dir "${QLIB_NORMALIZE_DIR}" --max_workers="${DUMP_QLIB_MAX_WORKERS}" --date_field_name="tradedate"
 log_step "Dumping normalized qlib data to binary files"
-python3 "${QLIB_REPO_DIR}/scripts/dump_bin.py" dump_all --csv_path "${QLIB_NORMALIZE_DIR}/" --qlib_dir "${QLIB_BIN_DIR}" --date_field_name=tradedate --exclude_fields=tradedate,symbol
+dump_bin_help="$(python3 "${QLIB_REPO_DIR}/scripts/dump_bin.py" dump_all --help 2>&1 || true)"
+dump_bin_data_flag="--csv_path"
+if printf '%s' "${dump_bin_help}" | grep -q -- '--data_path'; then
+    dump_bin_data_flag="--data_path"
+fi
+python3 "${QLIB_REPO_DIR}/scripts/dump_bin.py" dump_all "${dump_bin_data_flag}=${QLIB_NORMALIZE_DIR}/" --qlib_dir "${QLIB_BIN_DIR}" --date_field_name=tradedate --exclude_fields=tradedate,symbol
 
 mkdir -p "${QLIB_INDEX_DIR}"
 log_step "Dumping qlib index constituents"
