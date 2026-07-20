@@ -26,10 +26,10 @@ jobs:
       run: |
         set -euo pipefail
         docker rm -f upload_tar >/dev/null 2>&1 || true
-        docker volume inspect dolt-vol >/dev/null 2>&1 || docker volume create dolt-vol >/dev/null
+        docker volume inspect dolt_update >/dev/null 2>&1 || docker volume create dolt_update >/dev/null
         docker run --rm --name upload_tar --pull always \
           -v "${{ github.workspace }}:/output" \
-          -v dolt-vol:/dolt \
+          -v dolt_update:/dolt \
           -e HTTP_PROXY \
           -e http_proxy \
           -e HTTPS_PROXY \
