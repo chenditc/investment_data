@@ -34,10 +34,17 @@ If you are willing to sponsor the VPS fee, you can donate in this page: https://
 Thanks for everyone's help.
 
 # How to use it
-1. Download tar ball from latest release page on github
-2. Extract tar file to default qlib directory
+1. Download the canonical archive and its provenance manifest from the same GitHub release.
+2. Validate the completed archive bytes and date-bearing members.
+3. Extract the canonical archive to the default qlib directory.
 ```
-wget https://github.com/chenditc/investment_data/releases/download/2023-10-08/qlib_bin.tar.gz
+wget "https://github.com/chenditc/investment_data/releases/download/<release-tag>/qlib_bin.tar.gz"
+wget "https://github.com/chenditc/investment_data/releases/download/<release-tag>/qlib_bin.manifest.json"
+python3 qlib/validate_archive.py \
+  --archive qlib_bin.tar.gz \
+  --manifest qlib_bin.manifest.json \
+  --expected-tag "<release-tag>" \
+  --require-publishable
 tar -zxvf qlib_bin.tar.gz -C ~/.qlib/qlib_data/cn_data --strip-components=1
 ```
 
@@ -56,10 +63,15 @@ To download as dolt database:
 
 ## Export to qlib format
 ```
-docker run 
-  -v /<some output directory>:/output
-  -it --rm chenditc/investment_data bash dump_qlib_bin.sh && cp ./qlib_bin.tar.gz /output/
+docker run \
+  -v /<some output directory>:/output \
+  -it --rm chenditc/investment_data bash dump_qlib_bin.sh
 ```
+
+The standalone diagnostic grammar is `bash dump_qlib_bin.sh [WORKING_DIR [QLIB_REPOSITORY]]`.
+It always creates and validates `qlib_bin.tar.gz` together with
+`qlib_bin.manifest.json`. A standalone manifest has `image_digest:null`, so it
+is suitable for local inspection but cannot be published as a release asset.
 
 You can use the following parameter to mount an existing dolt chenditc/investment_data folder to the container.
 ```
@@ -76,15 +88,36 @@ bash daily_update.sh
 
 ## Daily update and output
 ```
-docker run -v /<some output directory>:/output -it --rm chenditc/investment_data bash daily_update.sh && bash dump_qlib_bin.sh && cp ./qlib_bin.tar.gz /output/
+docker run -v /<some output directory>:/output -it --rm chenditc/investment_data \
+  bash -lc 'bash daily_update.sh && bash dump_qlib_bin.sh'
 ```
 
 ## Upload to GitHub release
-Generate the tarball and upload it to the repository's release page without GitHub Actions:
+Release publication is authorized only by the digest-pinned workflow on `main`.
+Dispatch the normal publisher with:
 
 ```
-docker run --rm -e GITHUB_PAT=<token> chenditc/investment_data bash upload_release.sh
+gh workflow run upload_release.yml --repo chenditc/investment_data --ref main -f operation=publish
 ```
+
+`upload_release.sh` is workflow-internal and rejects direct/local/container
+publication. The workflow validates the ten-field manifest and the complete
+archive before any release mutation, then redownloads and validates both
+canonical assets.
+
+### Fail-safe repository rollback
+
+A full repository revert is ordered and fail-closed:
+
+1. Run `gh workflow disable upload_release.yml --repo chenditc/investment_data`.
+2. Query `gh workflow view upload_release.yml --repo chenditc/investment_data --json state --jq .state` and require the exact result `disabled_manually`.
+3. Query both `upload_release.yml` and `data_update.yml` runs and wait until every queued or in-progress job using the shared Dolt volume has drained.
+4. Perform the full repository revert.
+5. Run `gh workflow view upload_release.yml --repo chenditc/investment_data --json state --jq .state` again and require `disabled_manually`.
+6. Do not re-enable publication until validator-backed digest pinning, workflow authority, and shared concurrency/filesystem locking are restored and verified end to end.
+
+The revert may move the convenience `latest` image and therefore affect data update, but it cannot publish while the upload workflow is disabled. Draining is mandatory because a full revert may remove the shared lock and concurrency group. Already accepted release assets are untouched. An interrupted historical repair may complete only through the fixed `repair-2026-07-20` operation, and the stale backup is never auto-restored. The deployed monitor is separate external state; roll it back only with the tracked `ops/investment-data-project-monitor/deploy.sh rollback`, never as part of the repository revert.
+
 
 ## Extract tar file to qlib directory
 ```

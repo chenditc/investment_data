@@ -1,8 +1,21 @@
-set -e
+set -euo pipefail
 set -x
 
-[ ! -d "/dolt/investment_data" ] && echo "initializing dolt repo" && cd /dolt && dolt clone chenditc/investment_data
-cd /dolt/investment_data
+DOLT_DIR="/dolt"
+DOLT_LOCK_FILE="${DOLT_DIR}/.investment-data.lock"
+if ! command -v flock >/dev/null 2>&1; then
+    echo "Error: flock is required for the shared Dolt checkout." >&2
+    exit 1
+fi
+mkdir -p "${DOLT_DIR}"
+exec 8>"${DOLT_LOCK_FILE}"
+if ! flock -n 8; then
+    echo "Error: shared Dolt checkout is locked by another workflow." >&2
+    exit 1
+fi
+
+[ ! -d "${DOLT_DIR}/investment_data" ] && echo "initializing dolt repo" && cd "${DOLT_DIR}" && dolt clone chenditc/investment_data
+cd "${DOLT_DIR}/investment_data"
 dolt fetch origin master
 dolt reset --hard origin/master
 dolt checkout .

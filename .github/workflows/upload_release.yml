@@ -2,56 +2,80 @@ name: Upload latest data to github release
 
 on:
   workflow_dispatch:
+    inputs:
+      operation:
+        required: true
+        type: choice
+        default: publish
+        options:
+          - publish
+          - repair-2026-07-20
   schedule:
-    - cron: '1 11 * * *' # 19:01 Asia/Shanghai, matches the legacy serv1 cron
+    - cron: '1 11 * * *' # 19:01 Asia/Shanghai
 
 concurrency:
-  group: investment-data-release-upload
+  group: investment-data-dolt-volume
   cancel-in-progress: false
 
 jobs:
-  build:
+  publish:
     runs-on: investment-arc
-    timeout-minutes: 90
+    timeout-minutes: 180
     permissions:
       contents: write
+    env:
+      GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+      OPERATION: ${{ github.event_name == 'schedule' && 'publish' || inputs.operation }}
 
     steps:
-    - name: Get current UTC date
-      id: date
-      run: echo "date=$(date -u +%F)" >> "$GITHUB_OUTPUT"
-    - name: Build qlib binary archive
-      env:
-        # Keep the migrated workflow aligned with the legacy serv1 cron behavior.
-        # Data freshness is driven by the upstream data_update cadence rather than
-        # hard-failing release publication on the current calendar date.
-        CHECK_FRESHNESS: "0"
-      run: |
-        set -euo pipefail
-        docker rm -f upload_tar >/dev/null 2>&1 || true
-        docker volume inspect dolt_update >/dev/null 2>&1 || docker volume create dolt_update >/dev/null
-        docker run --rm --name upload_tar --pull always \
-          -v "${{ github.workspace }}:/output" \
-          -v dolt_update:/dolt \
-          -e HTTP_PROXY \
-          -e http_proxy \
-          -e HTTPS_PROXY \
-          -e https_proxy \
-          -e NO_PROXY \
-          -e no_proxy \
-          -e CHECK_FRESHNESS \
-          chenditc/investment_data:latest \
-          bash -lc 'set -euo pipefail
-          git config --global http.proxy "${http_proxy:-}"
-          git config --global https.proxy "${https_proxy:-}"
-          bash dump_qlib_bin.sh
-          ls -lh /output/'
-    - name: Upload binaries to release
-      uses: svenstaro/upload-release-action@v2
-      with:
-        repo_token: ${{ secrets.GH_TOKEN }}
-        file: ${{ github.workspace }}/qlib_bin.tar.gz
-        asset_name: qlib_bin.tar.gz
-        tag: ${{ steps.date.outputs.date }}
-        overwrite: true
-        body: "Daily update release"
+      - name: Resolve and verify immutable publication image
+        id: image
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$GITHUB_REPOSITORY" == "chenditc/investment_data" ]]
+          [[ "$GITHUB_REF" == "refs/heads/main" ]]
+          [[ "$GITHUB_SHA" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$GITHUB_EVENT_NAME" == "schedule" || "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]
+          [[ "$OPERATION" == "publish" || "$OPERATION" == "repair-2026-07-20" ]]
+          if [[ "$GITHUB_EVENT_NAME" == "schedule" ]]; then
+            [[ "$OPERATION" == "publish" ]]
+          fi
+
+          image_tag="chenditc/investment_data:sha-${GITHUB_SHA}"
+          docker pull "$image_tag"
+          image_digest="$(docker image inspect "$image_tag" --format '{{json .RepoDigests}}' \
+            | jq -er '[.[] | select(test("^chenditc/investment_data@sha256:[0-9a-f]{64}$"))] | if length == 1 then .[0] | split("@")[1] else error("ambiguous digest") end')"
+          repository_revision="$(docker image inspect "$image_tag" --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}')"
+          qlib_revision="$(docker image inspect "$image_tag" --format '{{ index .Config.Labels "io.chenditc.investment-data.qlib-revision" }}')"
+          [[ "$image_digest" =~ ^sha256:[0-9a-f]{64}$ ]]
+          [[ "$repository_revision" == "$GITHUB_SHA" ]]
+          [[ "$qlib_revision" == "b87a2c294d364a33fb739359886acffe8ec907d1" ]]
+          printf 'digest=%s\n' "$image_digest" >>"$GITHUB_OUTPUT"
+          printf 'repository_revision=%s\n' "$repository_revision" >>"$GITHUB_OUTPUT"
+          printf 'qlib_revision=%s\n' "$qlib_revision" >>"$GITHUB_OUTPUT"
+
+      - name: Build, validate, and publish release assets
+        shell: bash
+        env:
+          PUBLICATION_IMAGE_DIGEST: ${{ steps.image.outputs.digest }}
+          PUBLICATION_BAKED_REPOSITORY_REVISION: ${{ steps.image.outputs.repository_revision }}
+          PUBLICATION_BAKED_QLIB_REVISION: ${{ steps.image.outputs.qlib_revision }}
+        run: |
+          set -euo pipefail
+          docker rm -f upload_tar >/dev/null 2>&1 || true
+          docker volume inspect dolt_update >/dev/null 2>&1 || docker volume create dolt_update >/dev/null
+          args=()
+          if [[ "$OPERATION" == "repair-2026-07-20" ]]; then
+            args=(repair-2026-07-20)
+          fi
+          docker run --rm --name upload_tar \
+            -v dolt_update:/dolt \
+            -e HTTP_PROXY -e http_proxy -e HTTPS_PROXY -e https_proxy -e NO_PROXY -e no_proxy \
+            -e GITHUB_ACTIONS -e GITHUB_EVENT_NAME -e GITHUB_REPOSITORY -e GITHUB_REF \
+            -e GITHUB_SHA -e GITHUB_RUN_ID -e GITHUB_RUN_ATTEMPT -e GITHUB_TOKEN \
+            -e PUBLICATION_IMAGE_DIGEST \
+            -e PUBLICATION_BAKED_REPOSITORY_REVISION \
+            -e PUBLICATION_BAKED_QLIB_REVISION \
+            "chenditc/investment_data@${PUBLICATION_IMAGE_DIGEST}" \
+            bash upload_release.sh "${args[@]}"
