@@ -12,6 +12,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       -
+        name: Check out exact source commit
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      -
         name: Set up QEMU
         uses: docker/setup-qemu-action@v2
       -
@@ -27,5 +32,10 @@ jobs:
         name: Build and push
         uses: docker/build-push-action@v3
         with:
-          push: true
-          tags: chenditc/investment_data:latest
+          context: .
+          push: ${{ github.event_name != 'pull_request' }}
+          build-args: |
+            INVESTMENT_DATA_REVISION=${{ github.sha }}
+          tags: |
+            chenditc/investment_data:latest
+            chenditc/investment_data:sha-${{ github.sha }}

@@ -6,7 +6,7 @@ on:
     - cron: '30 * * * *' # Runs at 30 minutes past the hour, every hour
 
 concurrency:
-  group: investment-data-update
+  group: investment-data-dolt-volume
   cancel-in-progress: false
 
 jobs:

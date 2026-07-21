@@ -29,10 +29,17 @@
 
 
 # 如何使用
-1. 从GitHub上的最新发布页面下载tar压缩文件
-2. 将tar文件解压到默认的qlib目录
+1. 从同一个 GitHub Release 下载规范归档和来源清单。
+2. 校验完整归档的字节、日期成员和清单。
+3. 将规范归档解压到默认的 qlib 目录。
 ```
-wget https://github.com/chenditc/investment_data/releases/download/2023-10-08/qlib_bin.tar.gz
+wget "https://github.com/chenditc/investment_data/releases/download/<release-tag>/qlib_bin.tar.gz"
+wget "https://github.com/chenditc/investment_data/releases/download/<release-tag>/qlib_bin.manifest.json"
+python3 qlib/validate_archive.py \
+  --archive qlib_bin.tar.gz \
+  --manifest qlib_bin.manifest.json \
+  --expected-tag "<release-tag>" \
+  --require-publishable
 tar -zxvf qlib_bin.tar.gz -C ~/.qlib/qlib_data/cn_data --strip-components=1
 ```
 
@@ -51,8 +58,13 @@ tar -zxvf qlib_bin.tar.gz -C ~/.qlib/qlib_data/cn_data --strip-components=1
 
 ## 导出为qlib格式
 ```
-docker run -v /<some output directory>:/output -it --rm chenditc/investment_data bash dump_qlib_bin.sh && cp ./qlib_bin.tar.gz /output/
+docker run -v /<some output directory>:/output -it --rm chenditc/investment_data bash dump_qlib_bin.sh
 ```
+
+独立诊断命令的完整参数形式是
+`bash dump_qlib_bin.sh [WORKING_DIR [QLIB_REPOSITORY]]`。它总是成对生成并校验
+`qlib_bin.tar.gz` 与 `qlib_bin.manifest.json`。独立构建的清单中
+`image_digest` 为 `null`，可用于本地检查，但不能发布到 Release。
 
 ## 运行每日更新
 你将需要tushare令牌来使用tushare api。从https://tushare.pro/ 获取tushare令牌。
@@ -64,14 +76,38 @@ bash daily_update.sh
 
 ## 每日更新和输出
 ```
-docker run -v /<some output directory>:/output -it --rm chenditc/investment_data bash daily_update.sh && bash dump_qlib_bin.sh && cp ./qlib_bin.tar.gz /output/
+docker run -v /<some output directory>:/output -it --rm chenditc/investment_data \
+  bash -lc 'bash daily_update.sh && bash dump_qlib_bin.sh'
 ```
+
+## 发布到 GitHub Release
+
+只有 `main` 分支上按镜像摘要固定的工作流具有发布权限。正常发布使用：
+
+```bash
+gh workflow run upload_release.yml --repo chenditc/investment_data --ref main -f operation=publish
+```
+
+`upload_release.sh` 仅供工作流内部使用，会拒绝本地或容器直接发布。工作流在任何
+Release 变更前校验十字段清单和完整归档，并在上传后重新下载、校验两个规范资产。
+
+### 仓库回滚的失效安全顺序
+
+完整仓库回滚必须按以下顺序执行并保持失败关闭：
+
+1. 运行 `gh workflow disable upload_release.yml --repo chenditc/investment_data`。
+2. 运行 `gh workflow view upload_release.yml --repo chenditc/investment_data --json state --jq .state`，并要求结果严格等于 `disabled_manually`。
+3. 查询 `upload_release.yml` 与 `data_update.yml`，等待所有使用共享 Dolt 卷的排队中或运行中任务完全 drain（排空）。
+4. 执行完整仓库 revert。
+5. 再次运行 `gh workflow view upload_release.yml --repo chenditc/investment_data --json state --jq .state`，并要求状态仍严格等于 `disabled_manually`。
+6. 在基于 validator 的摘要固定、工作流 authority、共享 concurrency 和文件锁全部恢复并完成端到端验证前，禁止重新启用发布。
+
+回滚后的便利标签 `latest` 可能影响数据更新，但上传工作流禁用期间不能发布。完整回滚可能移除共享锁与 concurrency group，因此必须先 drain。已经 Accepted 的 Release 资产不会被仓库回滚修改；中断的历史修复只能通过固定的 `repair-2026-07-20` 操作完成；已知陈旧的 backup 永不自动恢复。已部署 monitor 属于独立外部状态，只能另行运行受跟踪的 `ops/investment-data-project-monitor/deploy.sh rollback` 回滚，不能把它耦合到仓库 revert。
+
 
 ## 将tar文件解压到qlib目录
 ```
-tar -zxvf qlib_bin.tar.gz
-
- -C ~/.qlib/qlib_data/cn_data --strip-components=2
+tar -zxvf qlib_bin.tar.gz -C ~/.qlib/qlib_data/cn_data --strip-components=1
 ```
 
 # 初衷

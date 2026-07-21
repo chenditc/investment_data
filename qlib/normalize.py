@@ -1,6 +1,9 @@
 import fire
 import pandas as pd
 from sqlalchemy import create_engine
+from concurrent.futures import ProcessPoolExecutor
+import datetime
+from typing import Optional
 
 CALENDAR_START_DATE = pd.Timestamp("2000-01-04")
 CALENDAR_EXCHANGE = "SSE"
@@ -30,7 +33,46 @@ class CrowdSourceNormalize(yahoo_collector.YahooNormalizeCN1d):
     result_df["amount"] = df["amount"]
     return result_df
 
-def _load_trade_calendar_list():
+
+class _DateFieldAwareNormalize(Normalize):
+  def format_data(self, df: pd.DataFrame) -> pd.DataFrame:
+    if self.interval != "1d" or df.empty:
+      return df
+
+    value = df.iloc[-1][self._date_field_name]
+    try:
+      parsed = pd.to_datetime(value, format="%Y-%m-%d", errors="raise")
+      if pd.isna(parsed):
+        raise ValueError("invalid final date")
+    except (TypeError, ValueError):
+      return df.iloc[:-1]
+    return df
+
+  def normalize(self):
+    # Upstream uses filesystem enumeration order. Sorting keeps fixed-input
+    # builds independent of directory iteration order.
+    file_list = sorted(self._source_dir.glob("*.csv"), key=lambda path: path.as_posix())
+    with ProcessPoolExecutor(max_workers=self._max_workers) as worker:
+      for _ in worker.map(self._executor, file_list):
+        pass
+
+
+def _canonical_date(value):
+    if not isinstance(value, str):
+        raise ValueError(f"Invalid target_trade_date: {value!r}")
+    try:
+        parsed = datetime.datetime.strptime(value, "%Y-%m-%d")
+    except ValueError as exc:
+        raise ValueError(f"Invalid target_trade_date: {value!r}") from exc
+    if parsed.strftime("%Y-%m-%d") != value:
+        raise ValueError(f"Invalid target_trade_date: {value!r}")
+    return value
+
+
+def _load_trade_calendar_list(target_trade_date=None):
+    if target_trade_date is not None:
+        target_trade_date = _canonical_date(target_trade_date)
+
     sql_engine = create_engine("mysql+pymysql://root:@127.0.0.1/investment_data", pool_recycle=3600)
     db_connection = sql_engine.raw_connection()
     try:
@@ -41,7 +83,7 @@ def _load_trade_calendar_list():
             WHERE exchange = '{CALENDAR_EXCHANGE}'
               AND is_open = 1
               AND date >= '{CALENDAR_START_DATE.date()}'
-              AND date <= CURRENT_DATE
+              AND date <= {f"'{target_trade_date}'" if target_trade_date is not None else "CURRENT_DATE"}
             ORDER BY date
             """,
             db_connection,
@@ -57,17 +99,27 @@ def _load_trade_calendar_list():
         )
     return calendar
 
-def normalize_crowd_source_data(source_dir=None, normalize_dir=None, max_workers=1, interval="1d", date_field_name="tradedate", symbol_field_name="symbol"):
+
+def normalize_crowd_source_data(
+    source_dir=None,
+    normalize_dir=None,
+    max_workers=1,
+    interval="1d",
+    date_field_name="tradedate",
+    symbol_field_name="symbol",
+    target_trade_date: Optional[str] = None,
+):
     import multiprocessing as mp
     mp.set_start_method("spawn", force=True)
-    CrowdSourceNormalize.CALENDAR_LIST = _load_trade_calendar_list()
-    yc = Normalize(
+    CrowdSourceNormalize.CALENDAR_LIST = _load_trade_calendar_list(target_trade_date)
+    yc = _DateFieldAwareNormalize(
         source_dir=source_dir,
         target_dir=normalize_dir,
         normalize_class=CrowdSourceNormalize,
         max_workers=max_workers,
         date_field_name=date_field_name,
         symbol_field_name=symbol_field_name,
+        interval=interval,
     )
     yc.normalize()
 
