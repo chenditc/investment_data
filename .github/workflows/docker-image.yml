@@ -29,6 +29,20 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       -
+        name: Select immutable and production image tags
+        id: image-tags
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            echo 'value<<EOF'
+            echo 'chenditc/investment_data:sha-${{ github.sha }}'
+            if [[ "$GITHUB_REF" == "refs/heads/main" ]]; then
+              echo 'chenditc/investment_data:latest'
+            fi
+            echo EOF
+          } >>"$GITHUB_OUTPUT"
+      -
         name: Build and push
         uses: docker/build-push-action@v3
         with:
@@ -36,6 +50,4 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           build-args: |
             INVESTMENT_DATA_REVISION=${{ github.sha }}
-          tags: |
-            chenditc/investment_data:latest
-            chenditc/investment_data:sha-${{ github.sha }}
+          tags: ${{ steps.image-tags.outputs.value }}

@@ -22,11 +22,11 @@ case "${TRACE:-0}" in
     1) set -x ;;
     *) printf 'Error: TRACE must be 0 or 1.\n' >&2; exit 2 ;;
 esac
-if [[ ! "${DUMP_QLIB_MAX_WORKERS:-8}" =~ ^[1-9][0-9]*$ ]]; then
+if [[ ! "${DUMP_QLIB_MAX_WORKERS:-2}" =~ ^[1-9][0-9]*$ ]]; then
     printf 'Error: DUMP_QLIB_MAX_WORKERS must be a positive decimal integer.\n' >&2
     exit 2
 fi
-DUMP_QLIB_MAX_WORKERS="${DUMP_QLIB_MAX_WORKERS:-8}"
+DUMP_QLIB_MAX_WORKERS="${DUMP_QLIB_MAX_WORKERS:-2}"
 
 if [[ -v OUTPUT_DIR ]] && { [[ ! -d "$OUTPUT_DIR" ]] || [[ ! -w "$OUTPUT_DIR" ]]; }; then
     printf 'Error: OUTPUT_DIR must be an existing writable directory.\n' >&2
@@ -136,7 +136,9 @@ fi
 
 if [[ ! -d "$SHARED_DOLT_CHECKOUT/.dolt" ]]; then
     log_step "Cloning Dolt data"
-    (cd "$DOLT_DIR" && dolt clone chenditc/investment_data)
+    (cd "$DOLT_DIR" \
+        && dolt clone --depth 1 --branch master \
+            chenditc/investment_data investment_data)
 fi
 if ! (cd "$SHARED_DOLT_CHECKOUT" && dolt status) | grep -q 'nothing to commit, working tree clean'; then
     printf 'Error: shared Dolt checkout is not clean.\n' >&2
@@ -157,18 +159,13 @@ if [[ ! "$SELECTED_DOLT_COMMIT" =~ ^[0-9a-v]{32}$ ]]; then
 fi
 
 BUILD_ROOT="$(mktemp -d "${WORKING_ROOT%/}/.qlib-build.XXXXXXXX")"
-PRIVATE_DOLT_CHECKOUT="$BUILD_ROOT/dolt/investment_data"
-mkdir -p "$(dirname "$PRIVATE_DOLT_CHECKOUT")"
-cp -a "$SHARED_DOLT_CHECKOUT" "$PRIVATE_DOLT_CHECKOUT"
-flock -u 8
-exec 8>&-
-
-(cd "$PRIVATE_DOLT_CHECKOUT" && dolt checkout -b qlib-build-snapshot "$SELECTED_DOLT_COMMIT")
-PRIVATE_DOLT_COMMIT="$(cd "$PRIVATE_DOLT_CHECKOUT" \
+SNAPSHOT_DOLT_CHECKOUT="$SHARED_DOLT_CHECKOUT"
+(cd "$SNAPSHOT_DOLT_CHECKOUT" && dolt reset --hard "$SELECTED_DOLT_COMMIT")
+SNAPSHOT_DOLT_COMMIT="$(cd "$SNAPSHOT_DOLT_CHECKOUT" \
     && dolt sql -r csv -q "SELECT DOLT_HASHOF('HEAD') AS value" \
     | tail -n 1 | tr -d '\r')"
-if [[ "$PRIVATE_DOLT_COMMIT" != "$SELECTED_DOLT_COMMIT" ]]; then
-    printf 'Error: private Dolt checkout identity mismatch.\n' >&2
+if [[ "$SNAPSHOT_DOLT_COMMIT" != "$SELECTED_DOLT_COMMIT" ]]; then
+    printf 'Error: locked Dolt checkout identity mismatch.\n' >&2
     exit 1
 fi
 
@@ -204,10 +201,6 @@ if ! canonical_date "$RELEASE_TAG"; then
     exit 1
 fi
 
-cd "$PRIVATE_DOLT_CHECKOUT"
-dolt sql-server --host 127.0.0.1 --port 3306 >"$BUILD_ROOT/dolt-sql-server.log" 2>&1 &
-DOLT_SQL_SERVER_PID=$!
-
 query_scalar() {
     DOLT_QUERY="$1" python3 - <<'PY'
 import os
@@ -231,24 +224,41 @@ finally:
 PY
 }
 
-SQL_SERVER_READY=false
-for _ in {1..60}; do
-    if [[ "$(query_scalar "SELECT 1" 2>/dev/null || true)" == "1" ]]; then
-        SQL_SERVER_READY=true
-        break
+start_dolt_sql_server() {
+    local ready=false server_commit
+    (
+        cd "$SNAPSHOT_DOLT_CHECKOUT"
+        exec dolt sql-server --host 127.0.0.1 --port 3306
+    ) >>"$BUILD_ROOT/dolt-sql-server.log" 2>&1 &
+    DOLT_SQL_SERVER_PID=$!
+    for _ in {1..60}; do
+        if [[ "$(query_scalar "SELECT 1" 2>/dev/null || true)" == "1" ]]; then
+            ready=true
+            break
+        fi
+        kill -0 "$DOLT_SQL_SERVER_PID" 2>/dev/null || break
+        sleep 1
+    done
+    if [[ "$ready" != true ]] || ! kill -0 "$DOLT_SQL_SERVER_PID" 2>/dev/null; then
+        printf 'Error: Dolt SQL server did not become ready.\n' >&2
+        exit 1
     fi
-    kill -0 "$DOLT_SQL_SERVER_PID" 2>/dev/null || break
-    sleep 1
-done
-if [[ "$SQL_SERVER_READY" != true ]] || ! kill -0 "$DOLT_SQL_SERVER_PID" 2>/dev/null; then
-    printf 'Error: Dolt SQL server did not become ready.\n' >&2
-    exit 1
-fi
-SERVER_DOLT_COMMIT="$(query_scalar "SELECT DOLT_HASHOF('HEAD')")"
-if [[ "$SERVER_DOLT_COMMIT" != "$SELECTED_DOLT_COMMIT" ]]; then
-    printf 'Error: Dolt SQL server identity mismatch before generation.\n' >&2
-    exit 1
-fi
+    server_commit="$(query_scalar "SELECT DOLT_HASHOF('HEAD')")"
+    if [[ "$server_commit" != "$SELECTED_DOLT_COMMIT" ]]; then
+        printf 'Error: Dolt SQL server identity mismatch before generation.\n' >&2
+        exit 1
+    fi
+}
+
+stop_dolt_sql_server() {
+    if [[ -n "$DOLT_SQL_SERVER_PID" ]]; then
+        kill "$DOLT_SQL_SERVER_PID"
+        wait "$DOLT_SQL_SERVER_PID"
+        DOLT_SQL_SERVER_PID=""
+    fi
+}
+
+start_dolt_sql_server
 
 TARGET_TRADE_DATE="$(query_scalar "SELECT MAX(date) AS value FROM ts_trade_day_calendar WHERE exchange = 'SSE' AND is_open = 1 AND date <= '$RELEASE_TAG'")"
 SOURCE_MAX_DATE="$(query_scalar "SELECT MAX(tradedate) AS value FROM final_a_stock_eod_price")"
@@ -301,6 +311,10 @@ for path in sorted(root.glob("*.csv"), key=lambda value: value.as_posix()):
         writer.writerows(rows)
 PY
 
+log_step "Restarting Dolt SQL server to release export scan cache"
+stop_dolt_sql_server
+start_dolt_sql_server
+
 export PYTHONPATH="${PYTHONPATH:-}:$QLIB_REPO_DIR:$QLIB_REPO_DIR/scripts"
 log_step "Normalizing qlib data with $DUMP_QLIB_MAX_WORKERS workers"
 python3 ./qlib/normalize.py \
@@ -308,14 +322,22 @@ python3 ./qlib/normalize.py \
     --normalize_dir "$QLIB_NORMALIZE_DIR" \
     --max_workers "$DUMP_QLIB_MAX_WORKERS" \
     --date_field_name tradedate \
-    --target_trade_date "$TARGET_TRADE_DATE"
+    --target_trade_date "$TARGET_TRADE_DATE" \
+    --delete_source_after_success=true
 
-log_step "Dumping normalized qlib data to binary files"
-python3 "$QLIB_REPO_DIR/scripts/dump_bin.py" dump_all \
-    --data_path "$QLIB_NORMALIZE_DIR" \
-    --qlib_dir "$QLIB_BIN_DIR" \
-    --date_field_name tradedate \
-    --exclude_fields tradedate,symbol
+if find "$QLIB_SOURCE_DIR" -type f -print -quit | grep -q .; then
+    printf 'Error: normalized qlib source files were not cleaned up.\n' >&2
+    exit 1
+fi
+rmdir "$QLIB_SOURCE_DIR"
+
+log_step "Dumping normalized qlib data to binary files sequentially"
+QLIB_DUMP_BIN_PATH="$QLIB_REPO_DIR/scripts/dump_bin.py" \
+python3 ./qlib/dump_bin_sequential.py \
+    --data-path "$QLIB_NORMALIZE_DIR" \
+    --qlib-dir "$QLIB_BIN_DIR" \
+    --date-field-name tradedate \
+    --exclude-fields tradedate,symbol
 
 log_step "Dumping bounded qlib index constituents"
 QLIB_INDEX_DIR="$QLIB_INDEX_DIR" python3 ./qlib/dump_index_weight.py \
@@ -331,9 +353,9 @@ if [[ "$SERVER_DOLT_COMMIT" != "$SELECTED_DOLT_COMMIT" ]]; then
     printf 'Error: Dolt SQL server identity mismatch after generation.\n' >&2
     exit 1
 fi
-kill "$DOLT_SQL_SERVER_PID"
-wait "$DOLT_SQL_SERVER_PID"
-DOLT_SQL_SERVER_PID=""
+stop_dolt_sql_server
+flock -u 8
+exec 8>&-
 
 SOURCE_DATE_EPOCH="$(date -u -d "$RELEASE_TAG 00:00:00Z" +%s)"
 export LC_ALL=C TZ=UTC SOURCE_DATE_EPOCH

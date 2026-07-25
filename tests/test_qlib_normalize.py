@@ -6,6 +6,7 @@ import types
 from typing import Optional
 import unittest
 from unittest import mock
+import tempfile
 
 import pandas as pd
 
@@ -133,6 +134,32 @@ class DateFieldAwareNormalizeTest(unittest.TestCase):
         self.assertIn("date <= CURRENT_DATE", read_sql.call_args.args[0])
         connection.close.assert_called_once_with()
         engine.dispose.assert_called_once_with()
+
+    def test_source_is_deleted_only_after_successful_normalization(self):
+        normalizer = MODULE._DateFieldAwareNormalize.__new__(
+            MODULE._DateFieldAwareNormalize
+        )
+        normalizer._delete_source_after_success = True
+        with tempfile.TemporaryDirectory() as temporary:
+            source = Path(temporary) / "SH600000.csv"
+            source.write_text("tradedate,close\n2026-07-24,10\n", encoding="utf-8")
+            normalizer._executor = mock.Mock(return_value=None)
+            normalizer._executor_with_source_cleanup(source)
+            normalizer._executor.assert_called_once_with(source)
+            self.assertFalse(source.exists())
+
+    def test_source_is_preserved_when_normalization_fails(self):
+        normalizer = MODULE._DateFieldAwareNormalize.__new__(
+            MODULE._DateFieldAwareNormalize
+        )
+        normalizer._delete_source_after_success = True
+        with tempfile.TemporaryDirectory() as temporary:
+            source = Path(temporary) / "SH600000.csv"
+            source.write_text("tradedate,close\n2026-07-24,10\n", encoding="utf-8")
+            normalizer._executor = mock.Mock(side_effect=RuntimeError("normalize failed"))
+            with self.assertRaisesRegex(RuntimeError, "normalize failed"):
+                normalizer._executor_with_source_cleanup(source)
+            self.assertTrue(source.exists())
 
 
 if __name__ == "__main__":
