@@ -15,7 +15,7 @@ on:
     - cron: '1 11 * * *' # 19:01 Asia/Shanghai
 
 concurrency:
-  group: investment-data-dolt-volume
+  group: ${{ github.ref == 'refs/heads/main' && 'investment-data-dolt-volume' || format('investment-data-dolt-volume-{0}', github.ref) }}
   cancel-in-progress: false
 
 jobs:

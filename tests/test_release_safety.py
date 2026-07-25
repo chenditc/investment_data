@@ -645,8 +645,13 @@ class StaticSafetyContractTest(unittest.TestCase):
         data = (ROOT / ".github/workflows/data_update.yml").read_text()
         image = (ROOT / ".github/workflows/docker-image.yml").read_text()
         dockerfile = (ROOT / "Dockerfile").read_text()
-        self.assertEqual(upload.count("group: investment-data-dolt-volume"), 1)
-        self.assertEqual(data.count("group: investment-data-dolt-volume"), 1)
+        concurrency_group = (
+            "group: ${{ github.ref == 'refs/heads/main' && "
+            "'investment-data-dolt-volume' || "
+            "format('investment-data-dolt-volume-{0}', github.ref) }}"
+        )
+        self.assertEqual(upload.count(concurrency_group), 1)
+        self.assertEqual(data.count(concurrency_group), 1)
         self.assertNotIn("CHECK_FRESHNESS", upload)
         self.assertNotIn("svenstaro/upload-release-action", upload)
         self.assertIn("permissions:\n      contents: write", upload)
