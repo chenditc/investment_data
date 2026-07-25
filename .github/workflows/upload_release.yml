@@ -9,6 +9,7 @@ on:
         default: publish
         options:
           - publish
+          - validate
           - repair-2026-07-20
   schedule:
     - cron: '1 11 * * *' # 19:01 Asia/Shanghai
@@ -19,7 +20,7 @@ concurrency:
 
 jobs:
   publish:
-    runs-on: investment-arc
+    runs-on: ubuntu-latest
     timeout-minutes: 180
     permissions:
       contents: write
@@ -28,22 +29,39 @@ jobs:
       OPERATION: ${{ github.event_name == 'schedule' && 'publish' || inputs.operation }}
 
     steps:
+      - name: Restore the newest verified Dolt snapshot
+        id: dolt-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ runner.temp }}/investment-data-dolt
+          key: investment-data-dolt-v1-${{ runner.os }}-restore-${{ github.run_id }}
+          restore-keys: |
+            investment-data-dolt-v1-${{ runner.os }}-
+
       - name: Resolve and verify immutable publication image
         id: image
         shell: bash
         run: |
           set -euo pipefail
           [[ "$GITHUB_REPOSITORY" == "chenditc/investment_data" ]]
-          [[ "$GITHUB_REF" == "refs/heads/main" ]]
           [[ "$GITHUB_SHA" =~ ^[0-9a-f]{40}$ ]]
           [[ "$GITHUB_EVENT_NAME" == "schedule" || "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]
-          [[ "$OPERATION" == "publish" || "$OPERATION" == "repair-2026-07-20" ]]
+          [[ "$OPERATION" == "publish" || "$OPERATION" == "validate" || "$OPERATION" == "repair-2026-07-20" ]]
           if [[ "$GITHUB_EVENT_NAME" == "schedule" ]]; then
             [[ "$OPERATION" == "publish" ]]
           fi
+          if [[ "$OPERATION" != "validate" ]]; then
+            [[ "$GITHUB_REF" == "refs/heads/main" ]]
+          fi
 
           image_tag="chenditc/investment_data:sha-${GITHUB_SHA}"
-          docker pull "$image_tag"
+          for attempt in 1 2 3; do
+            docker pull "$image_tag" && break
+            if [[ "$attempt" == 3 ]]; then
+              exit 1
+            fi
+            sleep "$((attempt * 10))"
+          done
           image_digest="$(docker image inspect "$image_tag" --format '{{json .RepoDigests}}' \
             | jq -er '[.[] | select(test("^chenditc/investment_data@sha256:[0-9a-f]{64}$"))] | if length == 1 then .[0] | split("@")[1] else error("ambiguous digest") end')"
           repository_revision="$(docker image inspect "$image_tag" --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}')"
@@ -64,18 +82,115 @@ jobs:
         run: |
           set -euo pipefail
           docker rm -f upload_tar >/dev/null 2>&1 || true
-          docker volume inspect dolt_update >/dev/null 2>&1 || docker volume create dolt_update >/dev/null
+          mkdir -p "$RUNNER_TEMP/investment-data-dolt" "$RUNNER_TEMP/release-output"
+          df -h "$RUNNER_TEMP"
+          free -h
+
           args=()
           if [[ "$OPERATION" == "repair-2026-07-20" ]]; then
             args=(repair-2026-07-20)
           fi
-          docker run --rm --name upload_tar \
-            -v dolt_update:/dolt \
+
+          cleanup() {
+            docker rm -f upload_tar >/dev/null 2>&1 || true
+          }
+          trap cleanup EXIT
+
+          container_command=(bash upload_release.sh "${args[@]}")
+          if [[ "$OPERATION" == "validate" ]]; then
+            container_command=(bash -lc '
+              set -euo pipefail
+              OUTPUT_DIR=/output bash dump_qlib_bin.sh
+              python3 qlib/validate_archive.py \
+                --archive /output/qlib_bin.tar.gz \
+                --manifest /output/qlib_bin.manifest.json \
+                --expected-tag "$(TZ=Asia/Shanghai date +%F)"
+              sha256sum /output/qlib_bin.tar.gz
+              cat /output/qlib_bin.manifest.json
+            ')
+          fi
+
+          docker run --name upload_tar --rm \
+            --memory=12g --memory-swap=12g \
+            -v "$RUNNER_TEMP/investment-data-dolt:/dolt" \
+            -v "$RUNNER_TEMP/release-output:/output" \
             -e HTTP_PROXY -e http_proxy -e HTTPS_PROXY -e https_proxy -e NO_PROXY -e no_proxy \
             -e GITHUB_ACTIONS -e GITHUB_EVENT_NAME -e GITHUB_REPOSITORY -e GITHUB_REF \
             -e GITHUB_SHA -e GITHUB_RUN_ID -e GITHUB_RUN_ATTEMPT -e GITHUB_TOKEN \
             -e PUBLICATION_IMAGE_DIGEST \
             -e PUBLICATION_BAKED_REPOSITORY_REVISION \
             -e PUBLICATION_BAKED_QLIB_REVISION \
+            -e MALLOC_ARENA_MAX=2 \
+            -e OMP_NUM_THREADS=1 \
+            -e OPENBLAS_NUM_THREADS=1 \
+            -e MKL_NUM_THREADS=1 \
+            -e NUMEXPR_NUM_THREADS=1 \
             "chenditc/investment_data@${PUBLICATION_IMAGE_DIGEST}" \
-            bash upload_release.sh "${args[@]}"
+            "${container_command[@]}" &
+          run_pid=$!
+
+          (
+            while kill -0 "$run_pid" 2>/dev/null; do
+              date -u
+              docker stats --no-stream \
+                --format 'memory={{.MemUsage}} cpu={{.CPUPerc}} block={{.BlockIO}}' \
+                upload_tar || true
+              df -h "$RUNNER_TEMP"
+              sleep 30
+            done
+          ) &
+          monitor_pid=$!
+
+          set +e
+          wait "$run_pid"
+          status=$?
+          set -e
+          kill "$monitor_pid" >/dev/null 2>&1 || true
+          wait "$monitor_pid" >/dev/null 2>&1 || true
+          exit "$status"
+
+      - name: Verify the build snapshot
+        id: snapshot
+        env:
+          PUBLICATION_IMAGE_DIGEST: ${{ steps.image.outputs.digest }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          snapshot="$(
+            docker run --rm \
+              --memory=4g --memory-swap=4g \
+              -v "$RUNNER_TEMP/investment-data-dolt:/dolt" \
+              "chenditc/investment_data@${PUBLICATION_IMAGE_DIGEST}" \
+              bash -lc '
+                set -euo pipefail
+                cd /dolt/investment_data
+                status="$(dolt status)"
+                grep -q "nothing to commit, working tree clean" <<<"$status"
+                commit="$(dolt sql -r csv -q "SELECT DOLT_HASHOF('\''HEAD'\'') AS value" | tail -n 1 | tr -d "\r")"
+                max_date="$(dolt sql -r csv -q "SELECT MAX(tradedate) AS value FROM final_a_stock_eod_price" | tail -n 1 | tr -d "\r")"
+                [[ "$commit" =~ ^[0-9a-v]{32}$ ]]
+                [[ "$max_date" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]
+                printf "%s,%s\n" "$commit" "$max_date"
+              '
+          )"
+          IFS=, read -r commit max_date <<<"$snapshot"
+          printf 'commit=%s\n' "$commit" >>"$GITHUB_OUTPUT"
+          printf 'max_date=%s\n' "$max_date" >>"$GITHUB_OUTPUT"
+          printf 'Verified build snapshot commit=%s max_date=%s\n' "$commit" "$max_date"
+
+      - name: Make the snapshot readable by the cache service
+        env:
+          PUBLICATION_IMAGE_DIGEST: ${{ steps.image.outputs.digest }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker run --rm \
+            -v "$RUNNER_TEMP/investment-data-dolt:/dolt" \
+            "chenditc/investment_data@${PUBLICATION_IMAGE_DIGEST}" \
+            chmod -R a+rX /dolt
+
+      - name: Save the verified Dolt snapshot
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ runner.temp }}/investment-data-dolt
+          key: investment-data-dolt-v1-${{ runner.os }}-${{ steps.snapshot.outputs.commit }}

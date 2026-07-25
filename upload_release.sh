@@ -291,7 +291,9 @@ select_normal_dolt_commit() {
         || { die "shared Dolt checkout lock is held"; return 1; }
     if [[ ! -d "$checkout/.dolt" ]]; then
         printf 'Cloning shared Dolt checkout.\n' >&2
-        (cd "$dolt_dir" && dolt clone chenditc/investment_data) >&2 \
+        (cd "$dolt_dir" \
+            && dolt clone --depth 1 --branch master \
+                chenditc/investment_data investment_data) >&2 \
             || { die "failed to clone shared Dolt checkout"; return 1; }
     fi
     status_output="$(cd "$checkout" && dolt status)" \

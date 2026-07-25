@@ -14,7 +14,10 @@ if ! flock -n 8; then
     exit 1
 fi
 
-[ ! -d "${DOLT_DIR}/investment_data" ] && echo "initializing dolt repo" && cd "${DOLT_DIR}" && dolt clone chenditc/investment_data
+[ ! -d "${DOLT_DIR}/investment_data" ] \
+  && echo "initializing shallow dolt repo" \
+  && cd "${DOLT_DIR}" \
+  && dolt clone --depth 1 --branch master chenditc/investment_data investment_data
 cd "${DOLT_DIR}/investment_data"
 dolt fetch origin master
 dolt reset --hard origin/master

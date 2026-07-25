@@ -655,6 +655,7 @@ class StaticSafetyContractTest(unittest.TestCase):
         self.assertNotIn("chenditc/investment_data:latest", upload)
         self.assertIn("sha-${{ github.sha }}", image)
         self.assertIn("INVESTMENT_DATA_REVISION=${{ github.sha }}", image)
+        self.assertIn('if [[ "$GITHUB_REF" == "refs/heads/main" ]]', image)
         self.assertIn(QLIB_COMMIT, dockerfile)
         self.assertIn("org.opencontainers.image.revision", dockerfile)
         self.assertIn("/opt/investment-data/REVISION", dockerfile)
@@ -671,7 +672,10 @@ class StaticSafetyContractTest(unittest.TestCase):
         self.assertEqual(operation["required"], "true")
         self.assertEqual(operation["type"], "choice")
         self.assertEqual(operation["default"], "publish")
-        self.assertEqual(operation["options"], ["publish", "repair-2026-07-20"])
+        self.assertEqual(
+            operation["options"],
+            ["publish", "validate", "repair-2026-07-20"],
+        )
 
     def test_dump_and_uploader_public_grammars_fail_before_work(self):
         dump = subprocess.run(["bash", str(ROOT / "dump_qlib_bin.sh"), "a", "b", "c"], text=True, capture_output=True)
@@ -1020,9 +1024,13 @@ if [[ -n "${MANIFEST_PATH:-}" ]]; then
   exit 0
 fi
 arguments="$*"
-if [[ "$arguments" == *dump_bin.py* ]]; then
+if [[ "$arguments" == *dump_bin.py* || "$arguments" == *dump_bin_sequential.py* ]]; then
   while (($#)); do
-    if [[ "$1" == --qlib_dir ]]; then shift; qlib_dir=$1; break; fi
+    if [[ "$1" == --qlib_dir || "$1" == --qlib-dir ]]; then
+      shift
+      qlib_dir=$1
+      break
+    fi
     shift
   done
   mkdir -p "$qlib_dir/calendars" "$qlib_dir/instruments"
@@ -1110,9 +1118,30 @@ exit 0
         self.assertNotIn("write_text(", calendar)
         self.assertIn("target_trade_date=None", normalize)
         self.assertIn("_DateFieldAwareNormalize", normalize)
-        self.assertIn('--data_path "$QLIB_NORMALIZE_DIR"', dump)
+        self.assertIn('--data-path "$QLIB_NORMALIZE_DIR"', dump)
+        self.assertIn("dump_bin_sequential.py", dump)
+        self.assertIn("--delete_source_after_success=true", dump)
         self.assertNotIn("dump_bin_help", dump)
         self.assertNotIn("--csv_path", dump)
+
+    def test_hosted_workflows_bound_resources_and_use_shallow_snapshot_cache(self):
+        update = (ROOT / ".github/workflows/data_update.yml").read_text()
+        upload = (ROOT / ".github/workflows/upload_release.yml").read_text()
+        daily = (ROOT / "daily_update.sh").read_text()
+        publisher = (ROOT / "upload_release.sh").read_text()
+        dump = (ROOT / "dump_qlib_bin.sh").read_text()
+        for workflow in (update, upload):
+            self.assertIn("runs-on: ubuntu-latest", workflow)
+            self.assertIn("actions/cache/restore@v4", workflow)
+            self.assertIn("actions/cache/save@v4", workflow)
+            self.assertIn("--memory=12g", workflow)
+            self.assertIn("chmod -R a+rX /dolt", workflow)
+            self.assertNotIn("runs-on: investment-arc", workflow)
+            self.assertNotIn("docker volume", workflow)
+        for script in (daily, publisher, dump):
+            self.assertIn("dolt clone --depth 1 --branch master", script)
+        self.assertNotIn('cp -a "$SHARED_DOLT_CHECKOUT"', dump)
+        self.assertIn('SNAPSHOT_DOLT_CHECKOUT="$SHARED_DOLT_CHECKOUT"', dump)
 
     def test_dolt_identities_use_machine_readable_hash_queries(self):
         dump = (ROOT / "dump_qlib_bin.sh").read_text()

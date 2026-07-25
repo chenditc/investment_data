@@ -11,24 +11,73 @@ concurrency:
 
 jobs:
   update-data:
-    runs-on: investment-arc
-    timeout-minutes: 45
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    permissions:
+      contents: read
 
     steps:
-    - name: Run daily update script in container
+    - name: Restore the newest verified Dolt snapshot
+      id: dolt-cache
+      uses: actions/cache/restore@v4
+      with:
+        path: ${{ runner.temp }}/investment-data-dolt
+        key: investment-data-dolt-v1-${{ runner.os }}-restore-${{ github.run_id }}
+        restore-keys: |
+          investment-data-dolt-v1-${{ runner.os }}-
+
+    - name: Resolve and verify immutable update image
+      id: image
+      shell: bash
+      run: |
+        set -euo pipefail
+        [[ "$GITHUB_SHA" =~ ^[0-9a-f]{40}$ ]]
+        image_tag="chenditc/investment_data:sha-${GITHUB_SHA}"
+        for attempt in 1 2 3; do
+          docker pull "$image_tag" && break
+          if [[ "$attempt" == 3 ]]; then
+            exit 1
+          fi
+          sleep "$((attempt * 10))"
+        done
+        image_digest="$(docker image inspect "$image_tag" --format '{{json .RepoDigests}}' \
+          | jq -er '[.[] | select(test("^chenditc/investment_data@sha256:[0-9a-f]{64}$"))] | if length == 1 then .[0] | split("@")[1] else error("ambiguous digest") end')"
+        repository_revision="$(docker image inspect "$image_tag" --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}')"
+        [[ "$image_digest" =~ ^sha256:[0-9a-f]{64}$ ]]
+        [[ "$repository_revision" == "$GITHUB_SHA" ]]
+        printf 'reference=%s@%s\n' \
+          'chenditc/investment_data' "$image_digest" >>"$GITHUB_OUTPUT"
+
+    - name: Run daily update with bounded resources
       env:
         DOLT_CONFIG_GLOBAL_JSON: ${{ secrets.DOLT_CONFIG_GLOBAL_JSON }}
         DOLT_JWK: ${{ secrets.DOLT_JWK }}
         TUSHARE: ${{ secrets.TUSHARE }}
+        IMAGE_REFERENCE: ${{ steps.image.outputs.reference }}
       run: |
         set -euo pipefail
         docker rm -f daily_dolt_update >/dev/null 2>&1 || true
-        docker volume inspect dolt_update >/dev/null 2>&1 || docker volume create dolt_update >/dev/null
-        docker run --pull always --name daily_dolt_update -v dolt_update:/dolt --rm \
+        mkdir -p "$RUNNER_TEMP/investment-data-dolt"
+        df -h "$RUNNER_TEMP"
+        free -h
+
+        cleanup() {
+          docker rm -f daily_dolt_update >/dev/null 2>&1 || true
+        }
+        trap cleanup EXIT
+
+        docker run --name daily_dolt_update --rm \
+          --memory=12g --memory-swap=12g \
+          -v "$RUNNER_TEMP/investment-data-dolt:/dolt" \
           -e DOLT_CONFIG_GLOBAL_JSON \
           -e DOLT_JWK \
           -e TUSHARE \
-          chenditc/investment_data:latest \
+          -e MALLOC_ARENA_MAX=2 \
+          -e OMP_NUM_THREADS=1 \
+          -e OPENBLAS_NUM_THREADS=1 \
+          -e MKL_NUM_THREADS=1 \
+          -e NUMEXPR_NUM_THREADS=1 \
+          "$IMAGE_REFERENCE" \
           bash -lc '
           set -euo pipefail
           mkdir -p /root/.dolt/creds
@@ -36,4 +85,78 @@ jobs:
           printf "%s\n" "$DOLT_JWK" > /root/.dolt/creds/j6ooicvf6t6a0c18pinnr0p6ao69eglbcsfmmh2247d50.jwk
 
           bash daily_update.sh
-          '
+          ' &
+        run_pid=$!
+
+        (
+          while kill -0 "$run_pid" 2>/dev/null; do
+            date -u
+            docker stats --no-stream \
+              --format 'memory={{.MemUsage}} cpu={{.CPUPerc}} block={{.BlockIO}}' \
+              daily_dolt_update || true
+            df -h "$RUNNER_TEMP"
+            sleep 30
+          done
+        ) &
+        monitor_pid=$!
+
+        set +e
+        wait "$run_pid"
+        status=$?
+        set -e
+        kill "$monitor_pid" >/dev/null 2>&1 || true
+        wait "$monitor_pid" >/dev/null 2>&1 || true
+        exit "$status"
+
+    - name: Verify the pushed Dolt snapshot
+      id: snapshot
+      env:
+        IMAGE_REFERENCE: ${{ steps.image.outputs.reference }}
+      shell: bash
+      run: |
+        set -euo pipefail
+        snapshot="$(
+          docker run --rm \
+            --memory=4g --memory-swap=4g \
+            -v "$RUNNER_TEMP/investment-data-dolt:/dolt" \
+            "$IMAGE_REFERENCE" \
+            bash -lc '
+              set -euo pipefail
+              cd /dolt/investment_data
+              status="$(dolt status)"
+              grep -q "nothing to commit, working tree clean" <<<"$status"
+              dolt fetch --silent origin master
+              local_commit="$(dolt sql -r csv -q "SELECT DOLT_HASHOF('\''HEAD'\'') AS value" | tail -n 1 | tr -d "\r")"
+              remote_commit="$(dolt sql -r csv -q "SELECT DOLT_HASHOF('\''origin/master'\'') AS value" | tail -n 1 | tr -d "\r")"
+              [[ "$local_commit" == "$remote_commit" ]]
+              max_date="$(dolt sql -r csv -q "SELECT MAX(tradedate) AS value FROM final_a_stock_eod_price" | tail -n 1 | tr -d "\r")"
+              price_count="$(dolt sql -r csv -q "SELECT COUNT(*) AS value FROM final_a_stock_eod_price" | tail -n 1 | tr -d "\r")"
+              [[ "$local_commit" =~ ^[0-9a-v]{32}$ ]]
+              [[ "$max_date" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]
+              [[ "$price_count" =~ ^[1-9][0-9]*$ ]]
+              printf "%s,%s,%s\n" "$local_commit" "$max_date" "$price_count"
+            '
+        )"
+        IFS=, read -r commit max_date price_count <<<"$snapshot"
+        printf 'commit=%s\n' "$commit" >>"$GITHUB_OUTPUT"
+        printf 'max_date=%s\n' "$max_date" >>"$GITHUB_OUTPUT"
+        printf 'price_count=%s\n' "$price_count" >>"$GITHUB_OUTPUT"
+        printf 'Verified Dolt commit=%s max_date=%s rows=%s\n' \
+          "$commit" "$max_date" "$price_count"
+
+    - name: Make the snapshot readable by the cache service
+      env:
+        IMAGE_REFERENCE: ${{ steps.image.outputs.reference }}
+      shell: bash
+      run: |
+        set -euo pipefail
+        docker run --rm \
+          -v "$RUNNER_TEMP/investment-data-dolt:/dolt" \
+          "$IMAGE_REFERENCE" \
+          chmod -R a+rX /dolt
+
+    - name: Save the verified Dolt snapshot
+      uses: actions/cache/save@v4
+      with:
+        path: ${{ runner.temp }}/investment-data-dolt
+        key: investment-data-dolt-v1-${{ runner.os }}-${{ steps.snapshot.outputs.commit }}

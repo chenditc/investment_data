@@ -48,12 +48,18 @@ class _DateFieldAwareNormalize(Normalize):
       return df.iloc[:-1]
     return df
 
+  def _executor_with_source_cleanup(self, file_path):
+    result = self._executor(file_path)
+    if getattr(self, "_delete_source_after_success", False):
+      file_path.unlink()
+    return result
+
   def normalize(self):
     # Upstream uses filesystem enumeration order. Sorting keeps fixed-input
     # builds independent of directory iteration order.
     file_list = sorted(self._source_dir.glob("*.csv"), key=lambda path: path.as_posix())
     with ProcessPoolExecutor(max_workers=self._max_workers) as worker:
-      for _ in worker.map(self._executor, file_list):
+      for _ in worker.map(self._executor_with_source_cleanup, file_list):
         pass
 
 
@@ -108,6 +114,7 @@ def normalize_crowd_source_data(
     date_field_name="tradedate",
     symbol_field_name="symbol",
     target_trade_date: Optional[str] = None,
+    delete_source_after_success=False,
 ):
     import multiprocessing as mp
     mp.set_start_method("spawn", force=True)
@@ -121,6 +128,7 @@ def normalize_crowd_source_data(
         symbol_field_name=symbol_field_name,
         interval=interval,
     )
+    yc._delete_source_after_success = delete_source_after_success
     yc.normalize()
 
 if __name__ == "__main__":
