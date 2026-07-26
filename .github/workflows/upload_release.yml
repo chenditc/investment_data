@@ -31,12 +31,12 @@ jobs:
     steps:
       - name: Restore the newest verified Dolt snapshot
         id: dolt-cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: ${{ runner.temp }}/investment-data-dolt
-          key: investment-data-dolt-v1-${{ runner.os }}-restore-${{ github.run_id }}
+          key: investment-data-dolt-v2-${{ runner.os }}-restore-${{ github.run_id }}
           restore-keys: |
-            investment-data-dolt-v1-${{ runner.os }}-
+            investment-data-dolt-v2-${{ runner.os }}-
 
       - name: Resolve and verify immutable publication image
         id: image
@@ -190,7 +190,8 @@ jobs:
             chmod -R a+rX /dolt
 
       - name: Save the verified Dolt snapshot
-        uses: actions/cache/save@v4
+        if: ${{ steps.dolt-cache.outputs.cache-matched-key != format('investment-data-dolt-v2-{0}-{1}', runner.os, steps.snapshot.outputs.commit) }}
+        uses: actions/cache/save@v6
         with:
           path: ${{ runner.temp }}/investment-data-dolt
-          key: investment-data-dolt-v1-${{ runner.os }}-${{ steps.snapshot.outputs.commit }}
+          key: investment-data-dolt-v2-${{ runner.os }}-${{ steps.snapshot.outputs.commit }}

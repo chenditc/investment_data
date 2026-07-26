@@ -1137,8 +1137,11 @@ exit 0
         dump = (ROOT / "dump_qlib_bin.sh").read_text()
         for workflow in (update, upload):
             self.assertIn("runs-on: ubuntu-latest", workflow)
-            self.assertIn("actions/cache/restore@v4", workflow)
-            self.assertIn("actions/cache/save@v4", workflow)
+            self.assertIn("actions/cache/restore@v6", workflow)
+            self.assertIn("actions/cache/save@v6", workflow)
+            self.assertIn("investment-data-dolt-v2-", workflow)
+            self.assertIn("steps.dolt-cache.outputs.cache-matched-key", workflow)
+            self.assertNotIn("investment-data-dolt-v1-", workflow)
             self.assertIn("--memory=12g", workflow)
             self.assertIn("chmod -R a+rX /dolt", workflow)
             self.assertNotIn("runs-on: investment-arc", workflow)
