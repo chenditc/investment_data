@@ -14,17 +14,53 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 120
     permissions:
+      actions: read
       contents: read
 
     steps:
+    - name: Resolve the newest cached Dolt snapshot
+      id: dolt-cache-key
+      env:
+        GH_TOKEN: ${{ github.token }}
+        CACHE_PREFIX: investment-data-dolt-v2-${{ runner.os }}-
+      shell: bash
+      run: |
+        set -euo pipefail
+        cache_key=""
+        if cache_keys="$(
+          gh api --method GET \
+            "repos/${GITHUB_REPOSITORY}/actions/caches" \
+            -f ref="$GITHUB_REF" \
+            -f key="$CACHE_PREFIX" \
+            -f sort=created_at \
+            -f direction=desc \
+            -f per_page=100 \
+            --jq '.actions_caches | sort_by(.created_at) | reverse | .[].key'
+        )"; then
+          while IFS= read -r candidate; do
+            suffix="${candidate#"$CACHE_PREFIX"}"
+            if [[ "$candidate" == "$CACHE_PREFIX"* && "$suffix" =~ ^[0-9a-v]{32}$ ]]; then
+              cache_key="$candidate"
+              break
+            fi
+          done <<<"$cache_keys"
+        else
+          echo "::notice::Cache inventory unavailable; using the cold-clone fallback."
+        fi
+        printf 'key=%s\n' "$cache_key" >>"$GITHUB_OUTPUT"
+        if [[ -n "$cache_key" ]]; then
+          printf 'Resolved cache key: %s\n' "$cache_key"
+        else
+          echo "No verified snapshot cache is available for this ref."
+        fi
+
     - name: Restore the newest verified Dolt snapshot
+      if: ${{ steps.dolt-cache-key.outputs.key != '' }}
       id: dolt-cache
-      uses: actions/cache/restore@v4
+      uses: actions/cache/restore@v6
       with:
         path: ${{ runner.temp }}/investment-data-dolt
-        key: investment-data-dolt-v1-${{ runner.os }}-restore-${{ github.run_id }}
-        restore-keys: |
-          investment-data-dolt-v1-${{ runner.os }}-
+        key: ${{ steps.dolt-cache-key.outputs.key }}
 
     - name: Resolve and verify immutable update image
       id: image
@@ -144,6 +180,33 @@ jobs:
         printf 'Verified Dolt commit=%s max_date=%s rows=%s\n' \
           "$commit" "$max_date" "$price_count"
 
+    - name: Check whether the verified snapshot is already cached
+      id: verified-cache
+      env:
+        GH_TOKEN: ${{ github.token }}
+        CACHE_KEY: investment-data-dolt-v2-${{ runner.os }}-${{ steps.snapshot.outputs.commit }}
+      shell: bash
+      run: |
+        set -euo pipefail
+        exists=unknown
+        if cache_keys="$(
+          gh api --method GET \
+            "repos/${GITHUB_REPOSITORY}/actions/caches" \
+            -f ref="$GITHUB_REF" \
+            -f key="$CACHE_KEY" \
+            -f per_page=100 \
+            --jq '.actions_caches[].key'
+        )"; then
+          exists=false
+          if grep -Fqx -- "$CACHE_KEY" <<<"$cache_keys"; then
+            exists=true
+          fi
+        else
+          echo "::notice::Cache inventory unavailable; relying on the restore result."
+        fi
+        printf 'exists=%s\n' "$exists" >>"$GITHUB_OUTPUT"
+        printf 'Verified snapshot cache exists: %s\n' "$exists"
+
     - name: Make the snapshot readable by the cache service
       env:
         IMAGE_REFERENCE: ${{ steps.image.outputs.reference }}
@@ -156,7 +219,8 @@ jobs:
           chmod -R a+rX /dolt
 
     - name: Save the verified Dolt snapshot
-      uses: actions/cache/save@v4
+      if: ${{ steps.dolt-cache.outputs.cache-matched-key != format('investment-data-dolt-v2-{0}-{1}', runner.os, steps.snapshot.outputs.commit) && steps.verified-cache.outputs.exists != 'true' }}
+      uses: actions/cache/save@v6
       with:
         path: ${{ runner.temp }}/investment-data-dolt
-        key: investment-data-dolt-v1-${{ runner.os }}-${{ steps.snapshot.outputs.commit }}
+        key: investment-data-dolt-v2-${{ runner.os }}-${{ steps.snapshot.outputs.commit }}
