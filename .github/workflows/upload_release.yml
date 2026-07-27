@@ -12,7 +12,8 @@ on:
           - validate
           - repair-2026-07-20
   schedule:
-    - cron: '1 11 * * *' # 19:01 Asia/Shanghai
+    - cron: '47 10 * * *' # 18:47 Asia/Shanghai: early fresh-data opportunity
+    - cron: '17 11,12 * * *' # 19:17 and 20:17 Asia/Shanghai: staggered fallbacks
 
 concurrency:
   group: ${{ github.ref == 'refs/heads/main' && 'investment-data-dolt-volume' || format('investment-data-dolt-volume-{0}', github.ref) }}
@@ -23,14 +24,38 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 180
     permissions:
-      actions: read
       contents: write
+      actions: read
     env:
       GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
       OPERATION: ${{ github.event_name == 'schedule' && 'publish' || inputs.operation }}
 
     steps:
+      - name: Check out exact source commit
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Decide whether publication is needed
+        id: publication-gate
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "$OPERATION" == "publish" ]]; then
+            mode="$(bash release_gate.sh)"
+          else
+            mode=build
+          fi
+          [[ "$mode" == "publish" || "$mode" == "validate-existing" \
+            || "$mode" == "skip" || "$mode" == "build" ]]
+          printf 'mode=%s\n' "$mode" >>"$GITHUB_OUTPUT"
+          printf 'Publication gate mode: %s\n' "$mode"
+
       - name: Resolve the newest cached Dolt snapshot
+        if: ${{ steps.publication-gate.outputs.mode == 'publish' || steps.publication-gate.outputs.mode == 'build' }}
         id: dolt-cache-key
         env:
           GH_TOKEN: ${{ github.token }}
@@ -67,7 +92,7 @@ jobs:
           fi
 
       - name: Restore the newest verified Dolt snapshot
-        if: ${{ steps.dolt-cache-key.outputs.key != '' }}
+        if: ${{ (steps.publication-gate.outputs.mode == 'publish' || steps.publication-gate.outputs.mode == 'build') && steps.dolt-cache-key.outputs.key != '' }}
         id: dolt-cache
         uses: actions/cache/restore@v6
         with:
@@ -75,6 +100,7 @@ jobs:
           key: ${{ steps.dolt-cache-key.outputs.key }}
 
       - name: Resolve and verify immutable publication image
+        if: ${{ steps.publication-gate.outputs.mode != 'skip' }}
         id: image
         shell: bash
         run: |
@@ -110,6 +136,7 @@ jobs:
           printf 'qlib_revision=%s\n' "$qlib_revision" >>"$GITHUB_OUTPUT"
 
       - name: Build, validate, and publish release assets
+        if: ${{ steps.publication-gate.outputs.mode != 'skip' }}
         shell: bash
         env:
           PUBLICATION_IMAGE_DIGEST: ${{ steps.image.outputs.digest }}
@@ -125,6 +152,8 @@ jobs:
           args=()
           if [[ "$OPERATION" == "repair-2026-07-20" ]]; then
             args=(repair-2026-07-20)
+          elif [[ "${{ steps.publication-gate.outputs.mode }}" == "validate-existing" ]]; then
+            args=(validate-existing)
           fi
 
           cleanup() {
@@ -186,6 +215,7 @@ jobs:
           exit "$status"
 
       - name: Verify the build snapshot
+        if: ${{ steps.publication-gate.outputs.mode == 'publish' || steps.publication-gate.outputs.mode == 'build' }}
         id: snapshot
         env:
           PUBLICATION_IMAGE_DIGEST: ${{ steps.image.outputs.digest }}
@@ -215,6 +245,7 @@ jobs:
           printf 'Verified build snapshot commit=%s max_date=%s\n' "$commit" "$max_date"
 
       - name: Check whether the verified snapshot is already cached
+        if: ${{ steps.publication-gate.outputs.mode == 'publish' || steps.publication-gate.outputs.mode == 'build' }}
         id: verified-cache
         env:
           GH_TOKEN: ${{ github.token }}
@@ -242,6 +273,7 @@ jobs:
           printf 'Verified snapshot cache exists: %s\n' "$exists"
 
       - name: Make the snapshot readable by the cache service
+        if: ${{ steps.publication-gate.outputs.mode == 'publish' || steps.publication-gate.outputs.mode == 'build' }}
         env:
           PUBLICATION_IMAGE_DIGEST: ${{ steps.image.outputs.digest }}
         shell: bash
@@ -253,7 +285,7 @@ jobs:
             chmod -R a+rX /dolt
 
       - name: Save the verified Dolt snapshot
-        if: ${{ steps.dolt-cache.outputs.cache-matched-key != format('investment-data-dolt-v2-{0}-{1}', runner.os, steps.snapshot.outputs.commit) && steps.verified-cache.outputs.exists != 'true' }}
+        if: ${{ (steps.publication-gate.outputs.mode == 'publish' || steps.publication-gate.outputs.mode == 'build') && steps.dolt-cache.outputs.cache-matched-key != format('investment-data-dolt-v2-{0}-{1}', runner.os, steps.snapshot.outputs.commit) && steps.verified-cache.outputs.exists != 'true' }}
         uses: actions/cache/save@v6
         with:
           path: ${{ runner.temp }}/investment-data-dolt
