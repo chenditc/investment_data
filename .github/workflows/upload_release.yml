@@ -194,24 +194,29 @@ jobs:
             "${container_command[@]}" &
           run_pid=$!
 
-          (
-            while kill -0 "$run_pid" 2>/dev/null; do
-              date -u
-              docker stats --no-stream \
-                --format 'memory={{.MemUsage}} cpu={{.CPUPerc}} block={{.BlockIO}}' \
-                upload_tar || true
-              df -h "$RUNNER_TEMP"
-              sleep 30
-            done
-          ) &
-          monitor_pid=$!
+          monitor_pid=""
+          if [[ "${{ steps.publication-gate.outputs.mode }}" != "validate-existing" ]]; then
+            (
+              while kill -0 "$run_pid" 2>/dev/null; do
+                date -u
+                docker stats --no-stream \
+                  --format 'memory={{.MemUsage}} cpu={{.CPUPerc}} block={{.BlockIO}}' \
+                  upload_tar || true
+                df -h "$RUNNER_TEMP"
+                sleep 30
+              done
+            ) &
+            monitor_pid=$!
+          fi
 
           set +e
           wait "$run_pid"
           status=$?
           set -e
-          kill "$monitor_pid" >/dev/null 2>&1 || true
-          wait "$monitor_pid" >/dev/null 2>&1 || true
+          if [[ -n "$monitor_pid" ]]; then
+            kill "$monitor_pid" >/dev/null 2>&1 || true
+            wait "$monitor_pid" >/dev/null 2>&1 || true
+          fi
           exit "$status"
 
       - name: Verify the build snapshot
