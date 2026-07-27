@@ -617,6 +617,7 @@ class StaticSafetyContractTest(unittest.TestCase):
     def test_shell_python_and_yaml_syntax(self):
         shells = [
             "dump_qlib_bin.sh",
+            "release_gate.sh",
             "upload_release.sh",
             "daily_update.sh",
             "ops/investment-data-project-monitor/collect_health.sh",
@@ -681,10 +682,24 @@ class StaticSafetyContractTest(unittest.TestCase):
             operation["options"],
             ["publish", "validate", "repair-2026-07-20"],
         )
+        self.assertEqual(
+            document["on"]["schedule"],
+            [
+                {"cron": "47 10 * * *"},
+                {"cron": "17 11,12 * * *"},
+            ],
+        )
 
     def test_dump_and_uploader_public_grammars_fail_before_work(self):
         dump = subprocess.run(["bash", str(ROOT / "dump_qlib_bin.sh"), "a", "b", "c"], text=True, capture_output=True)
         self.assertEqual(dump.returncode, 2)
+        gate = subprocess.run(
+            ["bash", str(ROOT / "release_gate.sh"), "other"],
+            text=True,
+            capture_output=True,
+        )
+        self.assertEqual(gate.returncode, 2)
+        self.assertEqual(gate.stdout, "")
         publisher = subprocess.run(["bash", str(ROOT / "upload_release.sh"), "other"], text=True, capture_output=True)
         self.assertEqual(publisher.returncode, 2)
         self.assertEqual(publisher.stdout, "")
@@ -794,6 +809,149 @@ class StaticSafetyContractTest(unittest.TestCase):
                 self.assertEqual(result.stderr, f"Error: {expected_error}\n")
                 self.assertFalse(side_effect_called)
                 self.assertFalse(lock_created)
+
+    def test_release_gate_selects_validate_skip_and_publish_without_mutation(self):
+        complete_release = json.dumps(
+            {
+                "id": 42,
+                "tag_name": "2026-07-20",
+                "draft": False,
+                "prerelease": False,
+                "assets": [
+                    {
+                        "name": "qlib_bin.tar.gz",
+                        "state": "uploaded",
+                        "size": 10,
+                        "digest": "sha256:" + "a" * 64,
+                    },
+                    {
+                        "name": "qlib_bin.manifest.json",
+                        "state": "uploaded",
+                        "size": 10,
+                        "digest": "sha256:" + "b" * 64,
+                    },
+                ],
+            },
+            separators=(",", ":"),
+        )
+        incomplete_release = json.dumps(
+            {
+                "id": 42,
+                "tag_name": "2026-07-20",
+                "draft": False,
+                "prerelease": False,
+                "assets": [
+                    {
+                        "name": "qlib_bin.tar.gz",
+                        "state": "uploaded",
+                        "size": 10,
+                        "digest": "sha256:" + "a" * 64,
+                    }
+                ],
+            },
+            separators=(",", ":"),
+        )
+        cases = (
+            ("complete", complete_release, 0, "", "validate-existing"),
+            ("missing-stale", "", 4, "2026-07-17\t2026-07-20", "skip"),
+            (
+                "incomplete-fresh",
+                incomplete_release,
+                0,
+                "2026-07-20\t2026-07-20",
+                "publish",
+            ),
+        )
+        for label, release, release_status, freshness, expected in cases:
+            with self.subTest(label=label):
+                with tempfile.TemporaryDirectory() as temporary:
+                    root = Path(temporary)
+                    release_file = root / "release.json"
+                    release_file.write_text(release, encoding="utf-8")
+                    freshness_file = root / "freshness.tsv"
+                    freshness_file.write_text(freshness, encoding="utf-8")
+                    sentinel = root / "freshness-called"
+                    body = r'''
+                      RELEASE_FILE=$1; RELEASE_STATUS=$2; FRESHNESS_FILE=$3
+                      FRESHNESS_SENTINEL=$4
+                      date() {
+                        if [[ "$*" == "+%F" ]]; then
+                          printf '%s\n' 2026-07-20
+                        else
+                          command date "$@"
+                        fi
+                      }
+                      github_get_release_by_tag_optional() {
+                        if [[ "$RELEASE_STATUS" == 0 ]]; then
+                          cat "$RELEASE_FILE"
+                        else
+                          return "$RELEASE_STATUS"
+                        fi
+                      }
+                      query_freshness() {
+                        : >"$FRESHNESS_SENTINEL"
+                        cat "$FRESHNESS_FILE"
+                      }
+                      publication_mode
+                    '''
+                    result = subprocess.run(
+                        [
+                            "bash",
+                            "-c",
+                            'source "$1"; shift; ' + body,
+                            "bash",
+                            str(ROOT / "release_gate.sh"),
+                            str(release_file),
+                            str(release_status),
+                            str(freshness_file),
+                            str(sentinel),
+                        ],
+                        text=True,
+                        capture_output=True,
+                    )
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    self.assertEqual(result.stdout, expected + "\n")
+                    self.assertEqual(sentinel.exists(), expected != "validate-existing")
+
+    def test_release_gate_rejects_future_source_and_malformed_complete_release(self):
+        bodies = (
+            r'''
+              date() {
+                [[ "$*" == "+%F" ]] && { printf '%s\n' 2026-07-20; return; }
+                command date "$@"
+              }
+              github_get_release_by_tag_optional() { return 4; }
+              query_freshness() { printf '%s\t%s\n' 2026-07-21 2026-07-20; }
+              publication_mode
+            ''',
+            r'''
+              date() {
+                [[ "$*" == "+%F" ]] && { printf '%s\n' 2026-07-20; return; }
+                command date "$@"
+              }
+              github_get_release_by_tag_optional() {
+                printf '%s\n' \
+                  '{"id":42,"tag_name":"2026-07-20","draft":true,"prerelease":false,"assets":[]}'
+              }
+              query_freshness() { exit 99; }
+              publication_mode
+            ''',
+        )
+        for body in bodies:
+            with self.subTest(body=body):
+                result = subprocess.run(
+                    [
+                        "bash",
+                        "-c",
+                        'source "$1"; shift; ' + body,
+                        "bash",
+                        str(ROOT / "release_gate.sh"),
+                    ],
+                    text=True,
+                    capture_output=True,
+                )
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(result.stdout, "")
 
     def test_forbidden_publisher_environment_is_rejected_before_network_even_when_empty(self):
         forbidden = (
@@ -1533,11 +1691,11 @@ class PublisherStateSimulationTest(unittest.TestCase):
             }
           fi
 
-          if [[ "$OPERATION" == publish ]]; then
-            publish_current
-          else
-            repair_fixed_release
-          fi
+          case "$OPERATION" in
+            publish) publish_current ;;
+            validate-existing) validate_existing_release ;;
+            repair) repair_fixed_release ;;
+          esac
         '''
         return subprocess.run(
             [
@@ -2207,6 +2365,39 @@ class PublisherStateSimulationTest(unittest.TestCase):
                 run_validator(canonical_archive, canonical_manifest, "--require-publishable").returncode,
                 0,
             )
+
+    def test_complete_normal_release_is_validated_without_dolt_or_rebuild(self):
+        pair_root = self.root / "existing-pair"
+        pair_root.mkdir()
+        archive, manifest = build_pair(pair_root)
+        original = self.root / "existing-unused-original"
+        original.write_bytes(b"unused")
+        self.reset_stateful_publish()
+        published = self.run_stateful_publisher(
+            "publish", archive, manifest, original
+        )
+        self.assertEqual(published.returncode, 0, published.stderr)
+        (self.root / "events.log").unlink()
+
+        validated = self.run_stateful_publisher(
+            "validate-existing", archive, manifest, original
+        )
+        self.assertEqual(validated.returncode, 0, validated.stderr)
+        self.assertEqual(
+            validated.stdout,
+            "Validated existing release 2026-07-20 with immutable archive and manifest assets.\n",
+        )
+        events = (self.root / "events.log").read_text().splitlines()
+        self.assertIn("release:get-normal", events)
+        self.assertNotIn("select-dolt", events)
+        self.assertFalse(
+            any(event.startswith(("upload:", "delete:")) for event in events),
+            events,
+        )
+        self.assertEqual(
+            [event for event in events if event.startswith("validate:")],
+            ["validate:existing-archive:existing-manifest"],
+        )
 
     def test_normal_publication_idempotence_archive_only_resume_and_conflicts(self):
         pair_root = self.root / "normal-states-pair"

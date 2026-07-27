@@ -29,7 +29,7 @@ die() {
 }
 
 usage() {
-    printf 'usage: %s [repair-2026-07-20]\n' "${0##*/}" >&2
+    printf 'usage: %s [validate-existing|repair-2026-07-20]\n' "${0##*/}" >&2
 }
 
 sha256_file() {
@@ -385,16 +385,8 @@ preflight() {
     ORIGIN_AUTHORITY_VERIFIED=true
 }
 
-get_or_create_release() {
-    local tag=$1 release
-    if release="$(github_get_release_by_tag_optional "$tag")"; then
-        :
-    elif (($? == 4)); then
-        release="$(github_create_release "$tag")" || return 1
-    else
-        die "unable to resolve release $tag"
-        return 1
-    fi
+set_release_identity() {
+    local tag=$1 release=$2
     jq -e --arg tag "$tag" '
         (.id | type) == "number"
         and .id > 0
@@ -404,6 +396,57 @@ get_or_create_release() {
     ' >/dev/null 2>&1 <<<"$release" \
         || { die "release identity, draft, or prerelease state is invalid"; return 1; }
     RELEASE_ID="$(jq -r '.id' <<<"$release")" || return 1
+}
+
+get_existing_release() {
+    local tag=$1 release status=0
+    release="$(github_get_release_by_tag_optional "$tag")" || status=$?
+    if ((status == 4)); then
+        die "release $tag does not exist"
+        return 1
+    elif ((status != 0)); then
+        die "unable to resolve release $tag"
+        return 1
+    fi
+    set_release_identity "$tag" "$release"
+}
+
+get_or_create_release() {
+    local tag=$1 release status=0
+    release="$(github_get_release_by_tag_optional "$tag")" || status=$?
+    if ((status == 4)); then
+        release="$(github_create_release "$tag")" || return 1
+    elif ((status != 0)); then
+        die "unable to resolve release $tag"
+        return 1
+    fi
+    set_release_identity "$tag" "$release"
+}
+
+validate_existing_release() {
+    local tag assets archive_slot manifest_slot archive_state manifest_state
+    local downloaded_archive downloaded_manifest
+    tag="$(TZ=Asia/Shanghai date +%F)" || return 1
+    get_existing_release "$tag" || return 1
+    assets="$(list_assets)" || return 1
+    [[ "$(jq 'length' <<<"$assets")" == "2" ]] \
+        || { die "existing release must contain exactly two assets"; return 1; }
+    archive_slot="$(slot_json "$assets" "$ARCHIVE_NAME")" || return 1
+    manifest_slot="$(slot_json "$assets" "$MANIFEST_NAME")" || return 1
+    archive_state="$(slot_state "$archive_slot")" || return 1
+    manifest_state="$(slot_state "$manifest_slot")" || return 1
+    [[ "$archive_state" == "uploaded" && "$manifest_state" == "uploaded" ]] \
+        || { die "existing release canonical assets are incomplete"; return 1; }
+
+    downloaded_archive="$WORK_DIR/existing-archive"
+    downloaded_manifest="$WORK_DIR/existing-manifest"
+    redownload_named_asset "$ARCHIVE_NAME" "$downloaded_archive" >/dev/null \
+        || return 1
+    redownload_named_asset "$MANIFEST_NAME" "$downloaded_manifest" >/dev/null \
+        || return 1
+    validate_pair "$downloaded_archive" "$downloaded_manifest" "$tag" || return 1
+    printf 'Validated existing release %s with immutable archive and manifest assets.\n' \
+        "$tag"
 }
 
 publish_current() {
@@ -1133,7 +1176,8 @@ main() {
     local operation
     if (($# == 0)); then
         operation=publish
-    elif (($# == 1)) && [[ "$1" == "repair-2026-07-20" ]]; then
+    elif (($# == 1)) \
+        && [[ "$1" == "validate-existing" || "$1" == "repair-2026-07-20" ]]; then
         operation=$1
     else
         usage
@@ -1143,11 +1187,11 @@ main() {
     preflight "$operation" || return 1
     WORK_DIR="$(mktemp -d /tmp/investment-data-publisher.XXXXXXXX)" || return 1
     trap 'status=$?; [[ -z "$WORK_DIR" || ! -d "$WORK_DIR" ]] || rm -rf -- "$WORK_DIR"; exit "$status"' EXIT
-    if [[ "$operation" == "publish" ]]; then
-        publish_current
-    else
-        repair_fixed_release
-    fi
+    case "$operation" in
+        publish) publish_current ;;
+        validate-existing) validate_existing_release ;;
+        repair-2026-07-20) repair_fixed_release ;;
+    esac
 }
 
 if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
