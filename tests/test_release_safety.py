@@ -657,6 +657,8 @@ class StaticSafetyContractTest(unittest.TestCase):
         self.assertNotIn("svenstaro/upload-release-action", upload)
         self.assertIn("permissions:\n      contents: write", upload)
         self.assertIn("GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}", upload)
+        self.assertIn("uses: actions/checkout@v5", upload)
+        self.assertNotIn("uses: actions/checkout@v4", upload)
         self.assertIn('"chenditc/investment_data@${PUBLICATION_IMAGE_DIGEST}"', upload)
         self.assertNotIn("chenditc/investment_data:latest", upload)
         self.assertIn("sha-${{ github.sha }}", image)
