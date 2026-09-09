@@ -83,10 +83,34 @@ done
 
 echo "Updating stock price"
 dolt sql-server &
-sleep 5 && python3 /investment_data/tushare/update_a_stock_eod_price_to_latest.py
-killall dolt
+DOLT_SQL_SERVER_PID=$!
 
+stop_dolt_sql_server() {
+    local server_pid="${DOLT_SQL_SERVER_PID:-}"
+    local wait_status=0
+
+    [[ -n "$server_pid" ]] || return 0
+    DOLT_SQL_SERVER_PID=""
+    if kill -0 "$server_pid" 2>/dev/null; then
+        kill "$server_pid" 2>/dev/null || true
+    fi
+    wait "$server_pid" || wait_status=$?
+    if ((wait_status != 0 && wait_status != 143)); then
+        echo "Error: dolt sql-server exited with status ${wait_status}." >&2
+        return "$wait_status"
+    fi
+}
+
+trap stop_dolt_sql_server EXIT
+sleep 5
+python3 /investment_data/tushare/update_a_stock_eod_price_to_latest.py
+
+# The running server owns the repository write lock, so this command is
+# intentionally routed through the server recorded in .dolt/sql-server.info.
 dolt sql --file /investment_data/tushare/regular_update.sql
+
+stop_dolt_sql_server
+trap - EXIT
 
 dolt add -A
 

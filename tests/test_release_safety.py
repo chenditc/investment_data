@@ -1067,6 +1067,8 @@ class StaticSafetyContractTest(unittest.TestCase):
                 bin_dir = root / f"bin-{case}"
                 bin_dir.mkdir()
                 sentinel = root / f"mutation-{case}"
+                server_sentinel = root / f"server-{case}"
+                regular_sql_sentinel = root / f"regular-sql-{case}"
                 if case != "missing-flock":
                     write_executable(
                         bin_dir,
@@ -1077,15 +1079,31 @@ class StaticSafetyContractTest(unittest.TestCase):
                     bin_dir,
                     "dolt",
                     (
+                        'if [[ "$1" == sql-server ]]; then\n'
+                        '  : >"$SERVER_SENTINEL"\n'
+                        "  trap '/usr/bin/rm -f \"$SERVER_SENTINEL\"; exit 0' TERM\n"
+                        "  while :; do /bin/sleep 1; done\n"
+                        "fi\n"
                         'if [[ "$1" == fetch ]]; then : >"$MUTATION_SENTINEL"; fi\n'
-                        'if [[ "$1" == status ]]; then '
-                        "printf '%s\\n' 'nothing to commit, working tree clean'; fi\n"
+                        'if [[ "$1" == status ]]; then\n'
+                        '  [[ ! -e "$SERVER_SENTINEL" ]] || exit 88\n'
+                        "  printf '%s\\n' 'nothing to commit, working tree clean'\n"
+                        "fi\n"
+                        'if [[ "$1" == sql && "$*" == *"regular_update.sql"* ]]; then\n'
+                        '  [[ -e "$SERVER_SENTINEL" ]] || exit 89\n'
+                        '  : >"$REGULAR_SQL_SENTINEL"\n'
+                        "fi\n"
                         'if [[ "$1" == sql && "$*" == *"MIN(index_max_date)"* ]]; then '
                         "printf '%s\\n' '20260721'; fi\n"
                         "exit 0\n"
                     ),
                 )
-                for name in ("python3", "killall", "sleep", "ls"):
+                write_executable(
+                    bin_dir,
+                    "python3",
+                    "exit 1\n" if case == "update-fails" else "exit 0\n",
+                )
+                for name in ("sleep", "ls"):
                     write_executable(bin_dir, name, "exit 0\n")
                 (bin_dir / "mkdir").symlink_to("/usr/bin/mkdir")
                 (bin_dir / "tail").symlink_to("/usr/bin/tail")
@@ -1096,22 +1114,34 @@ class StaticSafetyContractTest(unittest.TestCase):
                     env={
                         "PATH": str(bin_dir),
                         "MUTATION_SENTINEL": str(sentinel),
+                        "SERVER_SENTINEL": str(server_sentinel),
+                        "REGULAR_SQL_SENTINEL": str(regular_sql_sentinel),
                     },
-                ), sentinel.exists()
+                ), sentinel.exists(), server_sentinel.exists(), regular_sql_sentinel.exists()
 
-            acquired, acquired_mutation = run_case("acquired")
+            acquired, acquired_mutation, server_running, regular_sql_called = run_case("acquired")
             self.assertEqual(acquired.returncode, 0, acquired.stderr)
             self.assertTrue(acquired_mutation)
+            self.assertFalse(server_running)
+            self.assertTrue(regular_sql_called)
+
+            failed, mutation_called, server_running, regular_sql_called = run_case("update-fails")
+            self.assertNotEqual(failed.returncode, 0)
+            self.assertTrue(mutation_called)
+            self.assertFalse(server_running)
+            self.assertFalse(regular_sql_called)
 
             for case, expected_error in (
                 ("missing-flock", "flock is required"),
                 ("contended", "shared Dolt checkout is locked"),
             ):
                 with self.subTest(case=case):
-                    result, mutation_called = run_case(case)
+                    result, mutation_called, server_running, regular_sql_called = run_case(case)
                     self.assertNotEqual(result.returncode, 0)
                     self.assertIn(expected_error, result.stderr)
                     self.assertFalse(mutation_called)
+                    self.assertFalse(server_running)
+                    self.assertFalse(regular_sql_called)
 
     def _run_stubbed_standalone_dump(self):
         temporary = tempfile.TemporaryDirectory()
