@@ -97,6 +97,7 @@ jobs:
         mkdir -p "$RUNNER_TEMP/investment-data-dolt"
         update_result_file="$RUNNER_TEMP/daily-update-result"
         : >"$update_result_file"
+        chmod 666 "$update_result_file"
         df -h "$RUNNER_TEMP"
         free -h
 
@@ -241,19 +242,26 @@ jobs:
         path: ${{ runner.temp }}/investment-data-dolt
         key: investment-data-dolt-v2-${{ runner.os }}-${{ steps.snapshot.outputs.commit }}
 
-    - name: Trigger release after a data change
-      if: ${{ steps.update.outputs.updated == 'true' }}
+    - name: Trigger missing release after data update
       env:
         GH_TOKEN: ${{ secrets.GH_TOKEN }}
       shell: bash
       run: |
         set -euo pipefail
+        release_tag="$(TZ=Asia/Shanghai date +%F)"
+        if gh api \
+          "repos/${GITHUB_REPOSITORY}/releases/tags/${release_tag}" \
+          >/dev/null 2>&1; then
+          echo "Release ${release_tag} already exists; no dispatch is needed."
+          exit 0
+        fi
+
         for attempt in 1 2 3; do
           if gh workflow run upload_release.yml \
             --repo "$GITHUB_REPOSITORY" \
             --ref main \
             -f operation=publish; then
-            echo "Triggered release publication for updated Dolt data."
+            echo "Triggered release publication for ${release_tag}."
             exit 0
           fi
           if [[ "$attempt" == 3 ]]; then

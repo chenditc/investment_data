@@ -132,7 +132,7 @@ else
     echo "Changes found. Committing and pushing..."
     # Run the necessary commands
     dolt commit -m "Daily update"
-    dolt push --force origin master
     record_update_result updated
+    dolt push --force origin master
     echo "Changes committed and pushed."
 fi

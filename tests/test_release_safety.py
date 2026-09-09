@@ -1369,7 +1369,9 @@ exit 0
         self.assertIn('SNAPSHOT_DOLT_CHECKOUT="$SHARED_DOLT_CHECKOUT"', dump)
         self.assertIn("id: update", update)
         self.assertIn("DAILY_UPDATE_RESULT_FILE=/tmp/daily-update-result", update)
-        self.assertIn("steps.update.outputs.updated == 'true'", update)
+        self.assertIn('chmod 666 "$update_result_file"', update)
+        self.assertIn("Trigger missing release after data update", update)
+        self.assertIn("releases/tags/${release_tag}", update)
         self.assertIn("gh workflow run upload_release.yml", update)
         self.assertIn("-f operation=publish", update)
 
