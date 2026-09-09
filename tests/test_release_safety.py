@@ -1069,6 +1069,7 @@ class StaticSafetyContractTest(unittest.TestCase):
                 sentinel = root / f"mutation-{case}"
                 server_sentinel = root / f"server-{case}"
                 regular_sql_sentinel = root / f"regular-sql-{case}"
+                update_result = root / f"update-result-{case}"
                 if case != "missing-flock":
                     write_executable(
                         bin_dir,
@@ -1087,7 +1088,11 @@ class StaticSafetyContractTest(unittest.TestCase):
                         'if [[ "$1" == fetch ]]; then : >"$MUTATION_SENTINEL"; fi\n'
                         'if [[ "$1" == status ]]; then\n'
                         '  [[ ! -e "$SERVER_SENTINEL" ]] || exit 88\n'
-                        "  printf '%s\\n' 'nothing to commit, working tree clean'\n"
+                        '  if [[ "$TEST_CASE" == changed ]]; then\n'
+                        "    printf '%s\\n' 'modified: final_a_stock_eod_price'\n"
+                        "  else\n"
+                        "    printf '%s\\n' 'nothing to commit, working tree clean'\n"
+                        "  fi\n"
                         "fi\n"
                         'if [[ "$1" == sql && "$*" == *"regular_update.sql"* ]]; then\n'
                         '  [[ -e "$SERVER_SENTINEL" ]] || exit 89\n'
@@ -1116,32 +1121,44 @@ class StaticSafetyContractTest(unittest.TestCase):
                         "MUTATION_SENTINEL": str(sentinel),
                         "SERVER_SENTINEL": str(server_sentinel),
                         "REGULAR_SQL_SENTINEL": str(regular_sql_sentinel),
+                        "DAILY_UPDATE_RESULT_FILE": str(update_result),
+                        "TEST_CASE": case,
                     },
-                ), sentinel.exists(), server_sentinel.exists(), regular_sql_sentinel.exists()
+                ), sentinel.exists(), server_sentinel.exists(), regular_sql_sentinel.exists(), update_result
 
-            acquired, acquired_mutation, server_running, regular_sql_called = run_case("acquired")
+            acquired, acquired_mutation, server_running, regular_sql_called, update_result = run_case("acquired")
             self.assertEqual(acquired.returncode, 0, acquired.stderr)
             self.assertTrue(acquired_mutation)
             self.assertFalse(server_running)
             self.assertTrue(regular_sql_called)
+            self.assertEqual(update_result.read_text(), "unchanged\n")
 
-            failed, mutation_called, server_running, regular_sql_called = run_case("update-fails")
+            changed, mutation_called, server_running, regular_sql_called, update_result = run_case("changed")
+            self.assertEqual(changed.returncode, 0, changed.stderr)
+            self.assertTrue(mutation_called)
+            self.assertFalse(server_running)
+            self.assertTrue(regular_sql_called)
+            self.assertEqual(update_result.read_text(), "updated\n")
+
+            failed, mutation_called, server_running, regular_sql_called, update_result = run_case("update-fails")
             self.assertNotEqual(failed.returncode, 0)
             self.assertTrue(mutation_called)
             self.assertFalse(server_running)
             self.assertFalse(regular_sql_called)
+            self.assertFalse(update_result.exists())
 
             for case, expected_error in (
                 ("missing-flock", "flock is required"),
                 ("contended", "shared Dolt checkout is locked"),
             ):
                 with self.subTest(case=case):
-                    result, mutation_called, server_running, regular_sql_called = run_case(case)
+                    result, mutation_called, server_running, regular_sql_called, update_result = run_case(case)
                     self.assertNotEqual(result.returncode, 0)
                     self.assertIn(expected_error, result.stderr)
                     self.assertFalse(mutation_called)
                     self.assertFalse(server_running)
                     self.assertFalse(regular_sql_called)
+                    self.assertFalse(update_result.exists())
 
     def _run_stubbed_standalone_dump(self):
         temporary = tempfile.TemporaryDirectory()
@@ -1350,6 +1367,11 @@ exit 0
             self.assertIn("dolt clone --depth 1 --branch master", script)
         self.assertNotIn('cp -a "$SHARED_DOLT_CHECKOUT"', dump)
         self.assertIn('SNAPSHOT_DOLT_CHECKOUT="$SHARED_DOLT_CHECKOUT"', dump)
+        self.assertIn("id: update", update)
+        self.assertIn("DAILY_UPDATE_RESULT_FILE=/tmp/daily-update-result", update)
+        self.assertIn("steps.update.outputs.updated == 'true'", update)
+        self.assertIn("gh workflow run upload_release.yml", update)
+        self.assertIn("-f operation=publish", update)
 
     def test_dolt_identities_use_machine_readable_hash_queries(self):
         dump = (ROOT / "dump_qlib_bin.sh").read_text()

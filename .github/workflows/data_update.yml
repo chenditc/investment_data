@@ -85,6 +85,7 @@ jobs:
           'chenditc/investment_data' "$image_digest" >>"$GITHUB_OUTPUT"
 
     - name: Run daily update with bounded resources
+      id: update
       env:
         DOLT_CONFIG_GLOBAL_JSON: ${{ secrets.DOLT_CONFIG_GLOBAL_JSON }}
         DOLT_JWK: ${{ secrets.DOLT_JWK }}
@@ -94,6 +95,8 @@ jobs:
         set -euo pipefail
         docker rm -f daily_dolt_update >/dev/null 2>&1 || true
         mkdir -p "$RUNNER_TEMP/investment-data-dolt"
+        update_result_file="$RUNNER_TEMP/daily-update-result"
+        : >"$update_result_file"
         df -h "$RUNNER_TEMP"
         free -h
 
@@ -105,9 +108,11 @@ jobs:
         docker run --name daily_dolt_update --rm \
           --memory=12g --memory-swap=12g \
           -v "$RUNNER_TEMP/investment-data-dolt:/dolt" \
+          -v "$update_result_file:/tmp/daily-update-result" \
           -e DOLT_CONFIG_GLOBAL_JSON \
           -e DOLT_JWK \
           -e TUSHARE \
+          -e DAILY_UPDATE_RESULT_FILE=/tmp/daily-update-result \
           -e MALLOC_ARENA_MAX=2 \
           -e OMP_NUM_THREADS=1 \
           -e OPENBLAS_NUM_THREADS=1 \
@@ -142,7 +147,18 @@ jobs:
         set -e
         kill "$monitor_pid" >/dev/null 2>&1 || true
         wait "$monitor_pid" >/dev/null 2>&1 || true
-        exit "$status"
+        if ((status != 0)); then
+          exit "$status"
+        fi
+
+        update_result="$(tr -d '\r\n' <"$update_result_file")"
+        [[ "$update_result" == "updated" || "$update_result" == "unchanged" ]]
+        if [[ "$update_result" == "updated" ]]; then
+          printf 'updated=true\n' >>"$GITHUB_OUTPUT"
+        else
+          printf 'updated=false\n' >>"$GITHUB_OUTPUT"
+        fi
+        printf 'Daily update result: %s\n' "$update_result"
 
     - name: Verify the pushed Dolt snapshot
       id: snapshot
@@ -224,3 +240,25 @@ jobs:
       with:
         path: ${{ runner.temp }}/investment-data-dolt
         key: investment-data-dolt-v2-${{ runner.os }}-${{ steps.snapshot.outputs.commit }}
+
+    - name: Trigger release after a data change
+      if: ${{ steps.update.outputs.updated == 'true' }}
+      env:
+        GH_TOKEN: ${{ secrets.GH_TOKEN }}
+      shell: bash
+      run: |
+        set -euo pipefail
+        for attempt in 1 2 3; do
+          if gh workflow run upload_release.yml \
+            --repo "$GITHUB_REPOSITORY" \
+            --ref main \
+            -f operation=publish; then
+            echo "Triggered release publication for updated Dolt data."
+            exit 0
+          fi
+          if [[ "$attempt" == 3 ]]; then
+            echo "Error: failed to trigger release publication." >&2
+            exit 1
+          fi
+          sleep "$((attempt * 10))"
+        done

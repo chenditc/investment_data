@@ -116,13 +116,23 @@ dolt add -A
 
 status_output=$(dolt status)
 
+record_update_result() {
+    local result=$1
+
+    if [[ -n "${DAILY_UPDATE_RESULT_FILE:-}" ]]; then
+        printf '%s\n' "$result" >"$DAILY_UPDATE_RESULT_FILE"
+    fi
+}
+
 # Check if the status output contains the "nothing to commit, working tree clean" message
 if [[ $status_output == *"nothing to commit, working tree clean"* ]]; then
     echo "No changes to commit. Working tree is clean."
+    record_update_result unchanged
 else
     echo "Changes found. Committing and pushing..."
     # Run the necessary commands
     dolt commit -m "Daily update"
     dolt push --force origin master
+    record_update_result updated
     echo "Changes committed and pushed."
 fi
