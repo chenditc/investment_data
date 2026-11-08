@@ -4,12 +4,39 @@ import datetime
 import pandas
 import fire
 import time
+import math
 from zoneinfo import ZoneInfo
 from sqlalchemy import create_engine
 import pymysql
 
 ts.set_token(os.environ["TUSHARE"])
 pro=ts.pro_api()
+
+def verify_adjustment_anchor(connection, trade_date):
+    """Detect provider restatements before mixing factor scales across days."""
+    canonical = datetime.datetime.strptime(trade_date, '%Y%m%d').strftime('%Y-%m-%d')
+    stored = pandas.read_sql(
+        f"SELECT symbol, close, adjclose FROM ts_a_stock_eod_price WHERE tradedate = '{canonical}' AND close > 0",
+        connection,
+    )
+    fresh = pro.adj_factor(trade_date=trade_date)
+    if fresh.empty or not fresh['trade_date'].eq(trade_date).all():
+        raise RuntimeError(f'Missing adjustment anchor for {trade_date}')
+    indices=['399300.SZ','000905.SH','000300.SH','000906.SH','000852.SH','000985.SH']
+    stored=stored.loc[~stored['symbol'].isin(indices)]
+    merged = pandas.merge(stored, fresh, left_on='symbol', right_on='ts_code', how='left', validate='one_to_one')
+    if merged.empty or merged[['adj_factor','adjclose','close']].isna().any().any() \
+            or not merged['adj_factor'].gt(0).all() \
+            or not all(merged[column].map(math.isfinite).all() for column in ['adj_factor','adjclose','close']):
+        raise RuntimeError(f'Invalid adjustment anchor for {trade_date}')
+    old_factor = merged['adjclose'] / merged['close']
+    changed = (old_factor - merged['adj_factor']).abs() > merged['adj_factor'].abs() * 0.00001 + 0.000001
+    if changed.any():
+        symbols = ', '.join(merged.loc[changed, 'symbol'].head(10))
+        raise RuntimeError(
+            f'Provider adjustment history changed for {trade_date}: {symbols}; '
+            'refresh the affected history before appending another trading day'
+        )
 
 def get_trade_cal(start_date, end_date):
     df = pro.trade_cal(exchange='SSE', is_open='1',
@@ -61,6 +88,7 @@ def dump_astock_data():
     """
     try:
         latest_trade_date = pandas.read_sql(sql, dbConnection)["tradedate"][0].strftime('%Y%m%d')
+        verify_adjustment_anchor(dbConnection, latest_trade_date)
     finally:
         dbConnection.close()
     now = datetime.datetime.now(ZoneInfo("Asia/Shanghai"))

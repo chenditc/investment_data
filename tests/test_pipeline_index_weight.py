@@ -110,6 +110,15 @@ class IndexWeightCollectionTest(unittest.TestCase):
         MODULE.dump_index_data(start_date="20261101", end_date="20261231")
         self.assertTrue(all(call.kwargs["end_date"] <= "20261108" for call in self.pro.index_weight.call_args_list))
 
+    def test_csiall_uses_current_provider_code_and_keeps_database_identity(self):
+        with mock.patch.object(MODULE, 'index_list', ['000985.SH']):
+            self.pro.index_weight.side_effect = None
+            self.pro.index_weight.return_value = snapshot(index='000985.CSI')
+            MODULE.dump_index_data(start_date='20261030', end_date='20261031')
+        self.assertTrue(all(call.kwargs['index_code']=='000985.CSI' for call in self.pro.index_weight.call_args_list))
+        frame=pd.read_csv(self.root/'index_weight/000985.SH.csv')
+        self.assertEqual(frame['index_code'].tolist(),['000985.SH'])
+
 
 if __name__ == "__main__":
     unittest.main()

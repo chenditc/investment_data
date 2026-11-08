@@ -10,6 +10,7 @@ on:
         options:
           - publish
           - validate
+          - build
           - repair-2026-07-20
   schedule:
     - cron: '47 10 * * *' # 18:47 Asia/Shanghai: early fresh-data opportunity
@@ -108,7 +109,7 @@ jobs:
           [[ "$GITHUB_REPOSITORY" == "chenditc/investment_data" ]]
           [[ "$GITHUB_SHA" =~ ^[0-9a-f]{40}$ ]]
           [[ "$GITHUB_EVENT_NAME" == "schedule" || "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]
-          [[ "$OPERATION" == "publish" || "$OPERATION" == "validate" || "$OPERATION" == "repair-2026-07-20" ]]
+          [[ "$OPERATION" == "publish" || "$OPERATION" == "validate" || "$OPERATION" == "build" || "$OPERATION" == "repair-2026-07-20" ]]
           if [[ "$GITHUB_EVENT_NAME" == "schedule" ]]; then
             [[ "$OPERATION" == "publish" ]]
           fi
@@ -162,6 +163,9 @@ jobs:
           trap cleanup EXIT
 
           container_command=(bash upload_release.sh "${args[@]}")
+          if [[ "$OPERATION" == "build" ]]; then
+            container_command=(bash ops/build_source_repair_package.sh)
+          fi
           if [[ "$OPERATION" == "validate" ]]; then
             container_command=(bash -lc '
               set -euo pipefail
@@ -218,6 +222,18 @@ jobs:
             wait "$monitor_pid" >/dev/null 2>&1 || true
           fi
           exit "$status"
+
+      - name: Save validated repair package
+        if: ${{ inputs.operation == 'build' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: qlib-source-repair-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/release-output/qlib_bin.tar.gz
+            ${{ runner.temp }}/release-output/qlib_bin.manifest.json
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 14
 
       - name: Verify the build snapshot
         if: ${{ steps.publication-gate.outputs.mode == 'publish' || steps.publication-gate.outputs.mode == 'build' }}

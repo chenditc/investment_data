@@ -107,6 +107,7 @@ class DailyUpdateTest(unittest.TestCase):
         engine = mock.Mock()
         latest_frame = pd.DataFrame({"tradedate": [pd.Timestamp(latest)]})
         with mock.patch.object(MODULE, "datetime", clock), \
+                mock.patch.object(MODULE, "verify_adjustment_anchor"), \
                 mock.patch.object(MODULE, "create_engine", return_value=engine), \
                 mock.patch.object(MODULE.pandas, "read_sql", return_value=latest_frame), \
                 mock.patch.object(MODULE, "get_trade_cal", return_value=pd.DataFrame({"cal_date": dates})), \

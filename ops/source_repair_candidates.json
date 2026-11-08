@@ -1,0 +1,450 @@
+{
+  "base_commit": "kl67hfmqtpko9f0kjnu0hqdutjbvvkqs",
+  "source_run_id": 42469384443,
+  "candidates": [
+    {
+      "symbol": "BJ430139",
+      "start_date": "20221028",
+      "break_date": "2023-10-16",
+      "previous_date": "2023-10-13"
+    },
+    {
+      "symbol": "BJ430300",
+      "start_date": "20221207",
+      "break_date": "2023-10-16",
+      "previous_date": "2023-10-13"
+    },
+    {
+      "symbol": "BJ430476",
+      "start_date": "20221014",
+      "break_date": "2023-10-16",
+      "previous_date": "2023-10-13"
+    },
+    {
+      "symbol": "BJ430478",
+      "start_date": "20230223",
+      "break_date": "2023-10-16",
+      "previous_date": "2023-10-13"
+    },
+    {
+      "symbol": "BJ430556",
+      "start_date": "20230317",
+      "break_date": "2023-10-16",
+      "previous_date": "2023-10-13"
+    },
+    {
+      "symbol": "BJ430564",
+      "start_date": "20220617",
+      "break_date": "2023-10-16",
+      "previous_date": "2023-10-13"
+    },
+    {
+      "symbol": "BJ430685",
+      "start_date": "20221010",
+      "break_date": "2023-10-16",
+      "previous_date": "2023-10-13"
+    },
+    {
+      "symbol": "BJ830779",
+      "start_date": "20230601",
+      "break_date": "2023-10-16",
+      "previous_date": "2023-10-13"
+    },
+    {
+      "symbol": "BJ830809",
+      "start_date": "20230323",
+      "break_date": "2023-10-16",
+      "previous_date": "2023-10-13"
+    },
+    {
+      "symbol": "BJ830879",
+      "start_date": "20221220",
+      "break_date": "2023-10-16",
+      "previous_date": "2023-10-13"
+    },
+    {
+      "symbol": "BJ830896",
+      "start_date": "20230419",
+      "break_date": "2023-10-16",
+      "previous_date": "2023-10-13"
+    },
+    {
+      "symbol": "BJ830974",
+      "start_date": "20230308",
+      "break_date": "2023-10-16",
+      "previous_date": "2023-10-13"
+    },
+    {
+      "symbol": "BJ831167",
+      "start_date": "20220527",
+      "break_date": "2022-05-30",
+      "previous_date": "2022-05-27"
+    },
+    {
+      "symbol": "BJ831278",
+      "start_date": "20220620",
+      "break_date": "2023-10-16",
+      "previous_date": "2023-10-13"
+    },
+    {
+      "symbol": "BJ831526",
+      "start_date": "20221222",
+      "break_date": "2023-10-16",
+      "previous_date": "2023-10-13"
+    },
+    {
+      "symbol": "BJ831627",
+      "start_date": "20230907",
+      "break_date": "2023-10-16",
+      "previous_date": "2023-10-13"
+    },
+    {
+      "symbol": "BJ831641",
+      "start_date": "20221202",
+      "break_date": "2023-10-16",
+      "previous_date": "2023-10-13"
+    },
+    {
+      "symbol": "BJ831834",
+      "start_date": "20220822",
+      "break_date": "2023-10-16",
+      "previous_date": "2023-10-13"
+    },
+    {
+      "symbol": "BJ832023",
+      "start_date": "20230202",
+      "break_date": "2023-10-16",
+      "previous_date": "2023-10-13"
+    },
+    {
+      "symbol": "BJ832149",
+      "start_date": "20230217",
+      "break_date": "2023-10-16",
+      "previous_date": "2023-10-13"
+    },
+    {
+      "symbol": "BJ832662",
+      "start_date": "20221128",
+      "break_date": "2023-10-16",
+      "previous_date": "2023-10-13"
+    },
+    {
+      "symbol": "BJ832786",
+      "start_date": "20231013",
+      "break_date": "2023-10-16",
+      "previous_date": "2023-10-13"
+    },
+    {
+      "symbol": "BJ832802",
+      "start_date": "20230206",
+      "break_date": "2023-10-16",
+      "previous_date": "2023-10-13"
+    },
+    {
+      "symbol": "BJ832876",
+      "start_date": "20221109",
+      "break_date": "2023-10-16",
+      "previous_date": "2023-10-13"
+    },
+    {
+      "symbol": "BJ832982",
+      "start_date": "20230720",
+      "break_date": "2023-10-16",
+      "previous_date": "2023-10-13"
+    },
+    {
+      "symbol": "BJ833429",
+      "start_date": "20221215",
+      "break_date": "2023-10-16",
+      "previous_date": "2023-10-13"
+    },
+    {
+      "symbol": "BJ833455",
+      "start_date": "20230621",
+      "break_date": "2023-10-16",
+      "previous_date": "2023-10-13"
+    },
+    {
+      "symbol": "BJ833533",
+      "start_date": "20220524",
+      "break_date": "2022-05-30",
+      "previous_date": "2022-05-27"
+    },
+    {
+      "symbol": "BJ833751",
+      "start_date": "20230717",
+      "break_date": "2023-10-16",
+      "previous_date": "2023-10-13"
+    },
+    {
+      "symbol": "BJ833781",
+      "start_date": "20221226",
+      "break_date": "2023-10-16",
+      "previous_date": "2023-10-13"
+    },
+    {
+      "symbol": "BJ834033",
+      "start_date": "20221221",
+      "break_date": "2023-10-16",
+      "previous_date": "2023-10-13"
+    },
+    {
+      "symbol": "BJ834058",
+      "start_date": "20230810",
+      "break_date": "2023-10-16",
+      "previous_date": "2023-10-13"
+    },
+    {
+      "symbol": "BJ834261",
+      "start_date": "20230403",
+      "break_date": "2023-10-16",
+      "previous_date": "2023-10-13"
+    },
+    {
+      "symbol": "BJ834407",
+      "start_date": "20230216",
+      "break_date": "2023-10-16",
+      "previous_date": "2023-10-13"
+    },
+    {
+      "symbol": "BJ836247",
+      "start_date": "20221223",
+      "break_date": "2023-10-16",
+      "previous_date": "2023-10-13"
+    },
+    {
+      "symbol": "BJ836395",
+      "start_date": "20220901",
+      "break_date": "2023-10-16",
+      "previous_date": "2023-10-13"
+    },
+    {
+      "symbol": "BJ836414",
+      "start_date": "20221212",
+      "break_date": "2023-10-16",
+      "previous_date": "2023-10-13"
+    },
+    {
+      "symbol": "BJ836942",
+      "start_date": "20221208",
+      "break_date": "2023-10-16",
+      "previous_date": "2023-10-13"
+    },
+    {
+      "symbol": "BJ836957",
+      "start_date": "20221214",
+      "break_date": "2023-10-16",
+      "previous_date": "2023-10-13"
+    },
+    {
+      "symbol": "BJ837174",
+      "start_date": "20230818",
+      "break_date": "2023-10-16",
+      "previous_date": "2023-10-13"
+    },
+    {
+      "symbol": "BJ837821",
+      "start_date": "20220706",
+      "break_date": "2023-10-16",
+      "previous_date": "2023-10-13"
+    },
+    {
+      "symbol": "BJ838227",
+      "start_date": "20221228",
+      "break_date": "2023-10-16",
+      "previous_date": "2023-10-13"
+    },
+    {
+      "symbol": "BJ838810",
+      "start_date": "20221216",
+      "break_date": "2023-10-16",
+      "previous_date": "2023-10-13"
+    },
+    {
+      "symbol": "BJ870199",
+      "start_date": "20221201",
+      "break_date": "2023-10-16",
+      "previous_date": "2023-10-13"
+    },
+    {
+      "symbol": "BJ870299",
+      "start_date": "20220610",
+      "break_date": "2023-10-16",
+      "previous_date": "2023-10-13"
+    },
+    {
+      "symbol": "BJ870508",
+      "start_date": "20221216",
+      "break_date": "2023-10-16",
+      "previous_date": "2023-10-13"
+    },
+    {
+      "symbol": "BJ870976",
+      "start_date": "20230901",
+      "break_date": "2023-10-16",
+      "previous_date": "2023-10-13"
+    },
+    {
+      "symbol": "BJ871478",
+      "start_date": "20230512",
+      "break_date": "2023-10-16",
+      "previous_date": "2023-10-13"
+    },
+    {
+      "symbol": "BJ872374",
+      "start_date": "20221129",
+      "break_date": "2023-10-16",
+      "previous_date": "2023-10-13"
+    },
+    {
+      "symbol": "BJ872541",
+      "start_date": "20230310",
+      "break_date": "2023-10-16",
+      "previous_date": "2023-10-13"
+    },
+    {
+      "symbol": "BJ872808",
+      "start_date": "20221118",
+      "break_date": "2023-10-16",
+      "previous_date": "2023-10-13"
+    },
+    {
+      "symbol": "BJ872895",
+      "start_date": "20230406",
+      "break_date": "2023-10-16",
+      "previous_date": "2023-10-13"
+    },
+    {
+      "symbol": "BJ873152",
+      "start_date": "20230119",
+      "break_date": "2023-10-16",
+      "previous_date": "2023-10-13"
+    },
+    {
+      "symbol": "BJ873339",
+      "start_date": "20221117",
+      "break_date": "2023-10-16",
+      "previous_date": "2023-10-13"
+    },
+    {
+      "symbol": "BJ920047",
+      "start_date": "20251009",
+      "break_date": "2026-10-27",
+      "previous_date": "2026-10-26"
+    },
+    {
+      "symbol": "BJ920145",
+      "start_date": "20251009",
+      "break_date": "2026-10-27",
+      "previous_date": "2026-10-26"
+    },
+    {
+      "symbol": "BJ920199",
+      "start_date": "20251009",
+      "break_date": "2026-10-27",
+      "previous_date": "2026-10-26"
+    },
+    {
+      "symbol": "BJ920227",
+      "start_date": "20251009",
+      "break_date": "2026-10-27",
+      "previous_date": "2026-10-26"
+    },
+    {
+      "symbol": "BJ920242",
+      "start_date": "20251009",
+      "break_date": "2026-10-27",
+      "previous_date": "2026-10-26"
+    },
+    {
+      "symbol": "BJ920339",
+      "start_date": "20251009",
+      "break_date": "2026-10-27",
+      "previous_date": "2026-10-26"
+    },
+    {
+      "symbol": "BJ920427",
+      "start_date": "20251009",
+      "break_date": "2026-10-27",
+      "previous_date": "2026-10-26"
+    },
+    {
+      "symbol": "BJ920656",
+      "start_date": "20251009",
+      "break_date": "2026-10-27",
+      "previous_date": "2026-10-26"
+    },
+    {
+      "symbol": "BJ920751",
+      "start_date": "20251009",
+      "break_date": "2026-10-27",
+      "previous_date": "2026-10-26"
+    },
+    {
+      "symbol": "BJ920892",
+      "start_date": "20251009",
+      "break_date": "2026-10-27",
+      "previous_date": "2026-10-26"
+    },
+    {
+      "symbol": "BJ920957",
+      "start_date": "20251009",
+      "break_date": "2026-10-27",
+      "previous_date": "2026-10-26"
+    },
+    {
+      "symbol": "SH600745",
+      "start_date": "20000104",
+      "break_date": "2025-10-14",
+      "previous_date": "2025-10-13"
+    },
+    {
+      "symbol": "SZ000698",
+      "start_date": "20000104",
+      "break_date": "2025-10-14",
+      "previous_date": "2025-10-13"
+    },
+    {
+      "symbol": "SZ000908",
+      "start_date": "20000104",
+      "break_date": "2026-07-06",
+      "previous_date": "2026-07-03"
+    },
+    {
+      "symbol": "SZ001331",
+      "start_date": "20220908",
+      "break_date": "2026-06-30",
+      "previous_date": "2026-06-29"
+    },
+    {
+      "symbol": "SZ002370",
+      "start_date": "20100316",
+      "break_date": "2025-10-15",
+      "previous_date": "2025-10-14"
+    },
+    {
+      "symbol": "SZ002571",
+      "start_date": "20110412",
+      "break_date": "2025-10-17",
+      "previous_date": "2025-10-16"
+    },
+    {
+      "symbol": "SZ300506",
+      "start_date": "20160324",
+      "break_date": "2025-10-14",
+      "previous_date": "2025-10-13"
+    },
+    {
+      "symbol": "SZ300692",
+      "start_date": "20170821",
+      "break_date": "2025-10-13",
+      "previous_date": "2025-10-10"
+    },
+    {
+      "symbol": "SZ302132",
+      "start_date": "20250217",
+      "break_date": "2025-02-24",
+      "previous_date": "2025-02-21"
+    }
+  ]
+}

@@ -19,6 +19,7 @@ index_list = [
     '000852.SH', # csi1000
     '000985.SH', # csiall
     ]
+PROVIDER_INDEX_CODES = {'000985.SH': '000985.CSI'}
 
 def _date(value):
     text = str(value)
@@ -46,6 +47,7 @@ def dump_index_data(start_date=None, end_date=None, skip_exists=True):
     end = min(_date(end_date), today) if end_date is not None else today
 
     for index_name in index_list:
+        provider_code = PROVIDER_INDEX_CODES.get(index_name, index_name)
         filename = output_dir / f"{index_name}.csv"
         filename.unlink(missing_ok=True)
         if start_date is None:
@@ -56,7 +58,7 @@ def dump_index_data(start_date=None, end_date=None, skip_exists=True):
         result_frames = []
         for first, last in _windows(start, end):
             df = pro.index_weight(
-                index_code=index_name, start_date=first, end_date=last,
+                index_code=provider_code, start_date=first, end_date=last,
             )
             time.sleep(0.5)
             if df.empty:
@@ -67,11 +69,12 @@ def dump_index_data(start_date=None, end_date=None, skip_exists=True):
                 raise ValueError(f"Incomplete index weight response for {index_name}")
             df = df[required].copy()
             dates = df["trade_date"].astype(str)
-            if not df["index_code"].eq(index_name).all() \
+            if not df["index_code"].eq(provider_code).all() \
                     or not dates.between(first, last).all():
                 raise ValueError(f"Unexpected index or date in response for {index_name}")
             if df[required].isna().any().any():
                 raise ValueError(f"Null index weight fields for {index_name}")
+            df['index_code'] = index_name
             result_frames.append(df)
         if not result_frames:
             print(f"No index snapshots returned: {index_name} {start}..{end}")

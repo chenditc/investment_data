@@ -68,6 +68,14 @@ docker run \
   -it --rm chenditc/investment_data bash dump_qlib_bin.sh
 ```
 
+To build a validated package after a source-data repair without replacing an
+existing dated release, dispatch `upload_release.yml` on `main` with
+`operation=build`. The workflow uses the verified immutable image and publisher
+preflight, selects the current Dolt snapshot, and uploads both canonical files
+as a `qlib-source-repair-<run-id>` Actions artifact. Its manifest records the
+image digest and source commits. The artifact is retained for 14 days; normal
+scheduled publication continues to create dated releases.
+
 The standalone diagnostic grammar is `bash dump_qlib_bin.sh [WORKING_DIR [QLIB_REPOSITORY]]`.
 It always creates and validates `qlib_bin.tar.gz` together with
 `qlib_bin.manifest.json`. A standalone manifest has `image_digest:null`, so it
