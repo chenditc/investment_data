@@ -13,7 +13,8 @@ RUN case "${INVESTMENT_DATA_REVISION}" in \
     esac \
     && test "${QLIB_REVISION}" = "b87a2c294d364a33fb739359886acffe8ec907d1"
 
-RUN wget "https://github.com/dolthub/dolt/releases/download/v${DOLT_VERSION}/dolt-linux-amd64.tar.gz" -O /tmp/dolt-linux-amd64.tar.gz \
+COPY ops/download_dolt.py /tmp/download_dolt.py
+RUN python3 /tmp/download_dolt.py "${DOLT_VERSION}" /tmp/dolt-linux-amd64.tar.gz \
     && cd /tmp \
     && tar -zxvf /tmp/dolt-linux-amd64.tar.gz \
     && cp /tmp/dolt-linux-amd64/bin/dolt /usr/bin/ \
