@@ -1,0 +1,301 @@
+{
+  "base_commit": "kl67hfmqtpko9f0kjnu0hqdutjbvvkqs",
+  "candidates": [
+    {
+      "symbol": "BJ430139",
+      "start_date": "20221028"
+    },
+    {
+      "symbol": "BJ430300",
+      "start_date": "20221207"
+    },
+    {
+      "symbol": "BJ430476",
+      "start_date": "20221014"
+    },
+    {
+      "symbol": "BJ430478",
+      "start_date": "20230223"
+    },
+    {
+      "symbol": "BJ430556",
+      "start_date": "20230317"
+    },
+    {
+      "symbol": "BJ430564",
+      "start_date": "20220617"
+    },
+    {
+      "symbol": "BJ430685",
+      "start_date": "20221010"
+    },
+    {
+      "symbol": "BJ830779",
+      "start_date": "20230601"
+    },
+    {
+      "symbol": "BJ830809",
+      "start_date": "20230323"
+    },
+    {
+      "symbol": "BJ830879",
+      "start_date": "20221220"
+    },
+    {
+      "symbol": "BJ830896",
+      "start_date": "20230419"
+    },
+    {
+      "symbol": "BJ830974",
+      "start_date": "20230308"
+    },
+    {
+      "symbol": "BJ831167",
+      "start_date": "20220527"
+    },
+    {
+      "symbol": "BJ831278",
+      "start_date": "20220620"
+    },
+    {
+      "symbol": "BJ831526",
+      "start_date": "20221222"
+    },
+    {
+      "symbol": "BJ831627",
+      "start_date": "20230907"
+    },
+    {
+      "symbol": "BJ831641",
+      "start_date": "20221202"
+    },
+    {
+      "symbol": "BJ831834",
+      "start_date": "20220822"
+    },
+    {
+      "symbol": "BJ832023",
+      "start_date": "20230202"
+    },
+    {
+      "symbol": "BJ832149",
+      "start_date": "20230217"
+    },
+    {
+      "symbol": "BJ832662",
+      "start_date": "20221128"
+    },
+    {
+      "symbol": "BJ832786",
+      "start_date": "20231013"
+    },
+    {
+      "symbol": "BJ832802",
+      "start_date": "20230206"
+    },
+    {
+      "symbol": "BJ832876",
+      "start_date": "20221109"
+    },
+    {
+      "symbol": "BJ832982",
+      "start_date": "20230720"
+    },
+    {
+      "symbol": "BJ833429",
+      "start_date": "20221215"
+    },
+    {
+      "symbol": "BJ833455",
+      "start_date": "20230621"
+    },
+    {
+      "symbol": "BJ833533",
+      "start_date": "20220524"
+    },
+    {
+      "symbol": "BJ833751",
+      "start_date": "20230717"
+    },
+    {
+      "symbol": "BJ833781",
+      "start_date": "20221226"
+    },
+    {
+      "symbol": "BJ834033",
+      "start_date": "20221221"
+    },
+    {
+      "symbol": "BJ834058",
+      "start_date": "20230810"
+    },
+    {
+      "symbol": "BJ834261",
+      "start_date": "20230403"
+    },
+    {
+      "symbol": "BJ834407",
+      "start_date": "20230216"
+    },
+    {
+      "symbol": "BJ836247",
+      "start_date": "20221223"
+    },
+    {
+      "symbol": "BJ836395",
+      "start_date": "20220901"
+    },
+    {
+      "symbol": "BJ836414",
+      "start_date": "20221212"
+    },
+    {
+      "symbol": "BJ836942",
+      "start_date": "20221208"
+    },
+    {
+      "symbol": "BJ836957",
+      "start_date": "20221214"
+    },
+    {
+      "symbol": "BJ837174",
+      "start_date": "20230818"
+    },
+    {
+      "symbol": "BJ837821",
+      "start_date": "20220706"
+    },
+    {
+      "symbol": "BJ838227",
+      "start_date": "20221228"
+    },
+    {
+      "symbol": "BJ838810",
+      "start_date": "20221216"
+    },
+    {
+      "symbol": "BJ870199",
+      "start_date": "20221201"
+    },
+    {
+      "symbol": "BJ870299",
+      "start_date": "20220610"
+    },
+    {
+      "symbol": "BJ870508",
+      "start_date": "20221216"
+    },
+    {
+      "symbol": "BJ870976",
+      "start_date": "20230901"
+    },
+    {
+      "symbol": "BJ871478",
+      "start_date": "20230512"
+    },
+    {
+      "symbol": "BJ872374",
+      "start_date": "20221129"
+    },
+    {
+      "symbol": "BJ872541",
+      "start_date": "20230310"
+    },
+    {
+      "symbol": "BJ872808",
+      "start_date": "20221118"
+    },
+    {
+      "symbol": "BJ872895",
+      "start_date": "20230406"
+    },
+    {
+      "symbol": "BJ873152",
+      "start_date": "20230119"
+    },
+    {
+      "symbol": "BJ873339",
+      "start_date": "20221117"
+    },
+    {
+      "symbol": "BJ920047",
+      "start_date": "20251009"
+    },
+    {
+      "symbol": "BJ920145",
+      "start_date": "20251009"
+    },
+    {
+      "symbol": "BJ920199",
+      "start_date": "20251009"
+    },
+    {
+      "symbol": "BJ920227",
+      "start_date": "20251009"
+    },
+    {
+      "symbol": "BJ920242",
+      "start_date": "20251009"
+    },
+    {
+      "symbol": "BJ920339",
+      "start_date": "20251009"
+    },
+    {
+      "symbol": "BJ920427",
+      "start_date": "20251009"
+    },
+    {
+      "symbol": "BJ920656",
+      "start_date": "20251009"
+    },
+    {
+      "symbol": "BJ920751",
+      "start_date": "20251009"
+    },
+    {
+      "symbol": "BJ920892",
+      "start_date": "20251009"
+    },
+    {
+      "symbol": "BJ920957",
+      "start_date": "20251009"
+    },
+    {
+      "symbol": "SH600745",
+      "start_date": "20000104"
+    },
+    {
+      "symbol": "SZ000698",
+      "start_date": "20000104"
+    },
+    {
+      "symbol": "SZ000908",
+      "start_date": "20000104"
+    },
+    {
+      "symbol": "SZ001331",
+      "start_date": "20220908"
+    },
+    {
+      "symbol": "SZ002370",
+      "start_date": "20100316"
+    },
+    {
+      "symbol": "SZ002571",
+      "start_date": "20110412"
+    },
+    {
+      "symbol": "SZ300506",
+      "start_date": "20160324"
+    },
+    {
+      "symbol": "SZ300692",
+      "start_date": "20170821"
+    },
+    {
+      "symbol": "SZ302132",
+      "start_date": "20250217"
+    }
+  ]
+}
