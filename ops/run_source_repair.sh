@@ -9,6 +9,20 @@ cd /dolt/investment_data
 dolt fetch origin master
 remote_commit="$(dolt sql -r csv -q "SELECT DOLT_HASHOF('origin/master') AS value" | tail -n1)"
 [[ "$remote_commit" == kl67hfmqtpko9f0kjnu0hqdutjbvvkqs ]]
+if [[ "$OPERATION" == merge ]]; then
+    dolt fetch origin repair/source-data-2026-11-08
+    repair_commit="$(dolt sql -r csv -q "SELECT DOLT_HASHOF('origin/repair/source-data-2026-11-08') AS value" | tail -n1)"
+    [[ "$repair_commit" == qlftrn2agatvmoo3ahr5gui8fds679jd ]]
+    [[ "$(dolt sql -r csv -q "SELECT DOLT_HASHOF('HEAD') AS value" | tail -n1)" == "$remote_commit" ]]
+    dolt status | grep -q 'nothing to commit, working tree clean'
+    dolt merge --ff-only origin/repair/source-data-2026-11-08
+    mkdir -p /root/.dolt/creds
+    printf '%s\n' "$DOLT_CONFIG_GLOBAL_JSON" >/root/.dolt/config_global.json
+    printf '%s\n' "$DOLT_JWK" >/root/.dolt/creds/j6ooicvf6t6a0c18pinnr0p6ao69eglbcsfmmh2247d50.jwk
+    dolt push origin master
+    dolt sql -r csv -q "SELECT DOLT_HASHOF('HEAD') AS value" >/output/merged-commit.txt
+    exit 0
+fi
 python3 /repair/ops/repair_dolt_sources.py plan --database /dolt/investment_data \
     --inputs /inputs/factors --index-inputs /inputs/indices --output /output
 if [[ "$OPERATION" == apply ]]; then

@@ -5,7 +5,7 @@ on:
       operation:
         type: choice
         default: plan
-        options: [plan, apply]
+        options: [plan, apply, merge]
         required: true
 concurrency:
   group: investment-data-dolt-volume
