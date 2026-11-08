@@ -24,13 +24,14 @@ def call(api, **parameters):
 mapping = call('bse_mapping')
 (OUT/'mapping.json').write_text(json.dumps(mapping))
 aliases = {r['o_code']:r['n_code'] for r in mapping}
+listing_dates = {r['n_code']:r['list_date'] for r in mapping}
 manifest = json.loads(Path('ops/source_repair_candidates.json').read_text())
 targets = {}
 for item in manifest['candidates']:
     symbol = item['symbol']
     provider = symbol[2:] + '.' + symbol[:2]
     provider = aliases.get(provider, provider)
-    targets[provider] = min(targets.get(provider,'99999999'), item['start_date'])
+    targets[provider] = min(targets.get(provider,'99999999'), item['start_date'], listing_dates.get(provider,'99999999'))
 results = []
 for provider, start in sorted(targets.items()):
     rows = []
