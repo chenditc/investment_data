@@ -163,7 +163,8 @@ def prepare(database,inputs,output,index_inputs=None):
             date=row['trade_date'];row['trade_date']=date[:4]+'-'+date[4:6]+'-'+date[6:8]
         write_csv(output/'indices.csv',['index_code','stock_code','trade_date','weight'],indices)
         counts['index_rows']=len(indices)
-    manifest={'base_commit':BASE,'source_run_id':42469384443,'counts':counts,'source_symbols':sorted(actual),
+    manifest={'base_commit':BASE,'source_run_id':42469384443,'index_run_id':42469829545,'code_revision':os.environ.get('GITHUB_SHA'),
+              'counts':counts,'source_symbols':sorted(actual),
               'unresolved_boundaries':unresolved,'sha256':{path.name:hashlib.sha256(path.read_bytes()).hexdigest() for path in output.glob('*.csv')}}
     (output/'plan.json').write_text(json.dumps(manifest,indent=2))
     print(json.dumps(manifest),flush=True)
@@ -173,6 +174,8 @@ def apply(database,plan):
     manifest=json.loads((plan/'plan.json').read_text())
     if manifest['base_commit']!=BASE:
         raise ValueError('Invalid plan base')
+    if manifest.get('unresolved_boundaries'):
+        raise ValueError('Authoritative factors did not resolve every screened boundary')
     for name,digest in manifest['sha256'].items():
         if hashlib.sha256((plan/name).read_bytes()).hexdigest()!=digest:
             raise ValueError('Repair input checksum changed')
@@ -186,6 +189,9 @@ def apply(database,plan):
     for table,(name,definition) in definitions.items():
         database.run('sql','-q',f'CREATE TABLE {table} ({definition})')
         database.run('table','import','-u',table,str((plan/name).resolve()))
+    database.run('sql','-q','CREATE TABLE repair_20261108_manifest (repair_id VARCHAR(64) PRIMARY KEY,base_commit VARCHAR(32),manifest_json TEXT)')
+    serialized=json.dumps(manifest,sort_keys=True).replace("'","''")
+    database.run('sql','-q',f"INSERT INTO repair_20261108_manifest VALUES ('source-data-2026-11-08','{BASE}','{serialized}')")
     if (plan/'indices.csv').exists():
         database.run('table','import','-u','ts_index_weight',str((plan/'indices.csv').resolve()))
     database.run('sql','-q',"UPDATE ts_a_stock_eod_price p JOIN repair_20261108_adjustments r ON p.symbol=r.source_symbol AND p.tradedate=r.tradedate SET p.adjclose=r.raw_adjclose")
