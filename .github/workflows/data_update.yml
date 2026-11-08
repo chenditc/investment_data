@@ -1,274 +1,31 @@
-name: Update Investment Data
+name: Diagnose Tushare sources (read only)
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: '30 * * * *' # Runs at 30 minutes past the hour, every hour
 
-concurrency:
-  group: ${{ github.ref == 'refs/heads/main' && 'investment-data-dolt-volume' || format('investment-data-dolt-volume-{0}', github.ref) }}
-  cancel-in-progress: false
+permissions:
+  contents: read
 
 jobs:
-  update-data:
+  diagnose:
     runs-on: ubuntu-latest
-    timeout-minutes: 120
-    permissions:
-      actions: read
-      contents: read
-
+    timeout-minutes: 15
     steps:
-    - name: Resolve the newest cached Dolt snapshot
-      id: dolt-cache-key
-      env:
-        GH_TOKEN: ${{ github.token }}
-        CACHE_PREFIX: investment-data-dolt-v2-${{ runner.os }}-
-      shell: bash
-      run: |
-        set -euo pipefail
-        cache_key=""
-        if cache_keys="$(
-          gh api --method GET \
-            "repos/${GITHUB_REPOSITORY}/actions/caches" \
-            -f ref="$GITHUB_REF" \
-            -f key="$CACHE_PREFIX" \
-            -f sort=created_at \
-            -f direction=desc \
-            -f per_page=100 \
-            --jq '.actions_caches | sort_by(.created_at) | reverse | .[].key'
-        )"; then
-          while IFS= read -r candidate; do
-            suffix="${candidate#"$CACHE_PREFIX"}"
-            if [[ "$candidate" == "$CACHE_PREFIX"* && "$suffix" =~ ^[0-9a-v]{32}$ ]]; then
-              cache_key="$candidate"
-              break
-            fi
-          done <<<"$cache_keys"
-        else
-          echo "::notice::Cache inventory unavailable; using the cold-clone fallback."
-        fi
-        printf 'key=%s\n' "$cache_key" >>"$GITHUB_OUTPUT"
-        if [[ -n "$cache_key" ]]; then
-          printf 'Resolved cache key: %s\n' "$cache_key"
-        else
-          echo "No verified snapshot cache is available for this ref."
-        fi
-
-    - name: Restore the newest verified Dolt snapshot
-      if: ${{ steps.dolt-cache-key.outputs.key != '' }}
-      id: dolt-cache
-      uses: actions/cache/restore@v6
-      with:
-        path: ${{ runner.temp }}/investment-data-dolt
-        key: ${{ steps.dolt-cache-key.outputs.key }}
-
-    - name: Resolve and verify immutable update image
-      id: image
-      shell: bash
-      run: |
-        set -euo pipefail
-        [[ "$GITHUB_SHA" =~ ^[0-9a-f]{40}$ ]]
-        image_tag="chenditc/investment_data:sha-${GITHUB_SHA}"
-        for attempt in 1 2 3; do
-          docker pull "$image_tag" && break
-          if [[ "$attempt" == 3 ]]; then
-            exit 1
-          fi
-          sleep "$((attempt * 10))"
-        done
-        image_digest="$(docker image inspect "$image_tag" --format '{{json .RepoDigests}}' \
-          | jq -er '[.[] | select(test("^chenditc/investment_data@sha256:[0-9a-f]{64}$"))] | if length == 1 then .[0] | split("@")[1] else error("ambiguous digest") end')"
-        repository_revision="$(docker image inspect "$image_tag" --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}')"
-        [[ "$image_digest" =~ ^sha256:[0-9a-f]{64}$ ]]
-        [[ "$repository_revision" == "$GITHUB_SHA" ]]
-        printf 'reference=%s@%s\n' \
-          'chenditc/investment_data' "$image_digest" >>"$GITHUB_OUTPUT"
-
-    - name: Run daily update with bounded resources
-      id: update
-      env:
-        DOLT_CONFIG_GLOBAL_JSON: ${{ secrets.DOLT_CONFIG_GLOBAL_JSON }}
-        DOLT_JWK: ${{ secrets.DOLT_JWK }}
-        TUSHARE: ${{ secrets.TUSHARE }}
-        IMAGE_REFERENCE: ${{ steps.image.outputs.reference }}
-      run: |
-        set -euo pipefail
-        docker rm -f daily_dolt_update >/dev/null 2>&1 || true
-        mkdir -p "$RUNNER_TEMP/investment-data-dolt"
-        update_result_dir="$RUNNER_TEMP/daily-update-result"
-        update_result_file="$update_result_dir/result"
-        mkdir -p "$update_result_dir"
-        chmod 777 "$update_result_dir"
-        df -h "$RUNNER_TEMP"
-        free -h
-
-        cleanup() {
-          docker rm -f daily_dolt_update >/dev/null 2>&1 || true
-        }
-        trap cleanup EXIT
-
-        docker run --name daily_dolt_update --rm \
-          --memory=12g --memory-swap=12g \
-          -v "$RUNNER_TEMP/investment-data-dolt:/dolt" \
-          -v "$update_result_dir:/tmp/daily-update-result" \
-          -e DOLT_CONFIG_GLOBAL_JSON \
-          -e DOLT_JWK \
-          -e TUSHARE \
-          -e DAILY_UPDATE_RESULT_FILE=/tmp/daily-update-result/result \
-          -e MALLOC_ARENA_MAX=2 \
-          -e OMP_NUM_THREADS=1 \
-          -e OPENBLAS_NUM_THREADS=1 \
-          -e MKL_NUM_THREADS=1 \
-          -e NUMEXPR_NUM_THREADS=1 \
-          "$IMAGE_REFERENCE" \
-          bash -lc '
-          set -euo pipefail
-          mkdir -p /root/.dolt/creds
-          printf "%s\n" "$DOLT_CONFIG_GLOBAL_JSON" > /root/.dolt/config_global.json
-          printf "%s\n" "$DOLT_JWK" > /root/.dolt/creds/j6ooicvf6t6a0c18pinnr0p6ao69eglbcsfmmh2247d50.jwk
-          : >"$DAILY_UPDATE_RESULT_FILE"
-
-          bash daily_update.sh
-          ' &
-        run_pid=$!
-
-        (
-          while kill -0 "$run_pid" 2>/dev/null; do
-            date -u
-            docker stats --no-stream \
-              --format 'memory={{.MemUsage}} cpu={{.CPUPerc}} block={{.BlockIO}}' \
-              daily_dolt_update || true
-            df -h "$RUNNER_TEMP"
-            sleep 30
-          done
-        ) &
-        monitor_pid=$!
-
-        set +e
-        wait "$run_pid"
-        status=$?
-        set -e
-        kill "$monitor_pid" >/dev/null 2>&1 || true
-        wait "$monitor_pid" >/dev/null 2>&1 || true
-        if ((status != 0)); then
-          exit "$status"
-        fi
-
-        update_result="$(tr -d '\r\n' <"$update_result_file")"
-        [[ "$update_result" == "updated" || "$update_result" == "unchanged" ]]
-        if [[ "$update_result" == "updated" ]]; then
-          printf 'updated=true\n' >>"$GITHUB_OUTPUT"
-        else
-          printf 'updated=false\n' >>"$GITHUB_OUTPUT"
-        fi
-        printf 'Daily update result: %s\n' "$update_result"
-
-    - name: Verify the pushed Dolt snapshot
-      id: snapshot
-      env:
-        IMAGE_REFERENCE: ${{ steps.image.outputs.reference }}
-      shell: bash
-      run: |
-        set -euo pipefail
-        snapshot="$(
-          docker run --rm \
-            --memory=4g --memory-swap=4g \
-            -v "$RUNNER_TEMP/investment-data-dolt:/dolt" \
-            "$IMAGE_REFERENCE" \
-            bash -lc '
-              set -euo pipefail
-              cd /dolt/investment_data
-              status="$(dolt status)"
-              grep -q "nothing to commit, working tree clean" <<<"$status"
-              dolt fetch --silent origin master
-              local_commit="$(dolt sql -r csv -q "SELECT DOLT_HASHOF('\''HEAD'\'') AS value" | tail -n 1 | tr -d "\r")"
-              remote_commit="$(dolt sql -r csv -q "SELECT DOLT_HASHOF('\''origin/master'\'') AS value" | tail -n 1 | tr -d "\r")"
-              [[ "$local_commit" == "$remote_commit" ]]
-              max_date="$(dolt sql -r csv -q "SELECT MAX(tradedate) AS value FROM final_a_stock_eod_price" | tail -n 1 | tr -d "\r")"
-              price_count="$(dolt sql -r csv -q "SELECT COUNT(*) AS value FROM final_a_stock_eod_price" | tail -n 1 | tr -d "\r")"
-              [[ "$local_commit" =~ ^[0-9a-v]{32}$ ]]
-              [[ "$max_date" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]
-              [[ "$price_count" =~ ^[1-9][0-9]*$ ]]
-              printf "%s,%s,%s\n" "$local_commit" "$max_date" "$price_count"
-            '
-        )"
-        IFS=, read -r commit max_date price_count <<<"$snapshot"
-        printf 'commit=%s\n' "$commit" >>"$GITHUB_OUTPUT"
-        printf 'max_date=%s\n' "$max_date" >>"$GITHUB_OUTPUT"
-        printf 'price_count=%s\n' "$price_count" >>"$GITHUB_OUTPUT"
-        printf 'Verified Dolt commit=%s max_date=%s rows=%s\n' \
-          "$commit" "$max_date" "$price_count"
-
-    - name: Check whether the verified snapshot is already cached
-      id: verified-cache
-      env:
-        GH_TOKEN: ${{ github.token }}
-        CACHE_KEY: investment-data-dolt-v2-${{ runner.os }}-${{ steps.snapshot.outputs.commit }}
-      shell: bash
-      run: |
-        set -euo pipefail
-        exists=unknown
-        if cache_keys="$(
-          gh api --method GET \
-            "repos/${GITHUB_REPOSITORY}/actions/caches" \
-            -f ref="$GITHUB_REF" \
-            -f key="$CACHE_KEY" \
-            -f per_page=100 \
-            --jq '.actions_caches[].key'
-        )"; then
-          exists=false
-          if grep -Fqx -- "$CACHE_KEY" <<<"$cache_keys"; then
-            exists=true
-          fi
-        else
-          echo "::notice::Cache inventory unavailable; relying on the restore result."
-        fi
-        printf 'exists=%s\n' "$exists" >>"$GITHUB_OUTPUT"
-        printf 'Verified snapshot cache exists: %s\n' "$exists"
-
-    - name: Make the snapshot readable by the cache service
-      env:
-        IMAGE_REFERENCE: ${{ steps.image.outputs.reference }}
-      shell: bash
-      run: |
-        set -euo pipefail
-        docker run --rm \
-          -v "$RUNNER_TEMP/investment-data-dolt:/dolt" \
-          "$IMAGE_REFERENCE" \
-          chmod -R a+rX /dolt
-
-    - name: Save the verified Dolt snapshot
-      if: ${{ steps.dolt-cache.outputs.cache-matched-key != format('investment-data-dolt-v2-{0}-{1}', runner.os, steps.snapshot.outputs.commit) && steps.verified-cache.outputs.exists != 'true' }}
-      uses: actions/cache/save@v6
-      with:
-        path: ${{ runner.temp }}/investment-data-dolt
-        key: investment-data-dolt-v2-${{ runner.os }}-${{ steps.snapshot.outputs.commit }}
-
-    - name: Trigger missing release after data update
-      env:
-        GH_TOKEN: ${{ secrets.GH_TOKEN }}
-      shell: bash
-      run: |
-        set -euo pipefail
-        release_tag="$(TZ=Asia/Shanghai date +%F)"
-        if gh api \
-          "repos/${GITHUB_REPOSITORY}/releases/tags/${release_tag}" \
-          >/dev/null 2>&1; then
-          echo "Release ${release_tag} already exists; no dispatch is needed."
-          exit 0
-        fi
-
-        for attempt in 1 2 3; do
-          if gh workflow run upload_release.yml \
-            --repo "$GITHUB_REPOSITORY" \
-            --ref main \
-            -f operation=publish; then
-            echo "Triggered release publication for ${release_tag}."
-            exit 0
-          fi
-          if [[ "$attempt" == 3 ]]; then
-            echo "Error: failed to trigger release publication." >&2
-            exit 1
-          fi
-          sleep "$((attempt * 10))"
-        done
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install source client
+        run: python -m pip install tushare==1.2.89
+      - name: Read current adjustment histories and index snapshots
+        env:
+          TUSHARE: ${{ secrets.TUSHARE }}
+        run: python ops/diagnose_tushare_sources.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: source-diagnosis
+          path: source-diagnosis/
+          retention-days: 7
