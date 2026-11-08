@@ -42,7 +42,9 @@ RUN test "$(git -C /investment_data rev-parse HEAD)" = "${INVESTMENT_DATA_REVISI
     && printf '%s\n' "${QLIB_REVISION}" > /opt/investment-data/QLIB_REVISION \
     && chmod 0444 /opt/investment-data/REVISION /opt/investment-data/QLIB_REVISION \
     && PYTHONPATH=/qlib:/qlib/scripts python3 -m unittest discover \
-        -s /investment_data/tests -p 'test_qlib_*.py'
+        -s /investment_data/tests -p 'test_qlib_*.py' \
+    && python3 -m unittest discover \
+        -s /investment_data/tests -p 'test_pipeline_*.py'
 
 # Add a global sitecustomize.py so every Python process defaults to "spawn".
 RUN printf '%s\n' \

@@ -86,6 +86,11 @@ export TUSHARE=<Token>
 bash daily_update.sh
 ```
 
+The stock collector uses Asia/Shanghai dates and waits until 17:00 before
+collecting the current trading day's closing prices. Failed requests, missing
+expected trading days, and incomplete price/adjustment-factor pairs stop the
+update before it can commit or advance past a missing day.
+
 ## Daily update and output
 ```
 docker run -v /<some output directory>:/output -it --rm chenditc/investment_data \
@@ -104,6 +109,14 @@ gh workflow run upload_release.yml --repo chenditc/investment_data --ref main -f
 publication. The workflow validates the ten-field manifest and the complete
 archive before any release mutation, then redownloads and validates both
 canonical assets.
+
+The release gate uses a bounded, read-only DoltHub GraphQL query to avoid
+unnecessary builds while data is still stale. If that online check is unavailable,
+it defers to the publisher's mandatory local snapshot freshness and archive
+validation; a failed local check still prevents release creation and uploads.
+The target trading day must also contain more than 1,000 price rows, matching
+the collector's existing completion floor, so index-only updates cannot make
+an otherwise stale stock snapshot publishable.
 
 ### Fail-safe repository rollback
 

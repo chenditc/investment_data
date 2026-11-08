@@ -1160,7 +1160,7 @@ class StaticSafetyContractTest(unittest.TestCase):
                     self.assertFalse(regular_sql_called)
                     self.assertFalse(update_result.exists())
 
-    def _run_stubbed_standalone_dump(self):
+    def _run_stubbed_standalone_dump(self, price_count="5500"):
         temporary = tempfile.TemporaryDirectory()
         self.addCleanup(temporary.cleanup)
         root = Path(temporary.name)
@@ -1228,6 +1228,7 @@ exit 0
   case "$DOLT_QUERY" in
     *"SELECT 1"*) printf '%s\n' 1 ;;
     *"DOLT_HASHOF"*) printf '%s\n' '9vtplc2tar9ver7p6s1bus2oiedjvtqo' ;;
+    *"COUNT(*)"*) printf '%s\n' "$FIXTURE_PRICE_COUNT" ;;
     *"MIN(date)"*) printf '%s\n' '2026-07-22' ;;
     *"MAX(tradedate)"*) printf '%s\n' '2026-07-21' ;;
     *"date <="*) printf '%s\n' '2026-07-21' ;;
@@ -1272,6 +1273,7 @@ exit 0
             "QLIB_CHECKOUT": str(qlib_checkout),
             "EXPECTED_QLIB_REPOSITORY": str(supplied_repository),
             "EXPECTED_QLIB_COMMIT": QLIB_COMMIT,
+            "FIXTURE_PRICE_COUNT": price_count,
         }
         result = subprocess.run(
             [

@@ -275,6 +275,14 @@ if [[ "$SOURCE_MAX_DATE" != "$TARGET_TRADE_DATE" ]]; then
         "$SOURCE_MAX_DATE" "$TARGET_TRADE_DATE" >&2
     exit 1
 fi
+# Index prices can advance MAX(tradedate) before the stock batch arrives.
+# Use the same >1000-row completion floor as the incremental stock collector.
+SOURCE_DAY_ROWS="$(query_scalar "SELECT COUNT(*) AS value FROM final_a_stock_eod_price WHERE tradedate = '$TARGET_TRADE_DATE'")"
+if [[ ! "$SOURCE_DAY_ROWS" =~ ^[0-9]+$ ]] || ((SOURCE_DAY_ROWS <= 1000)); then
+    printf 'Error: source date %s has only %s rows; expected more than 1000 before publication.\n' \
+        "$TARGET_TRADE_DATE" "$SOURCE_DAY_ROWS" >&2
+    exit 1
+fi
 if [[ "$RELEASE_TAG" == "2026-07-20" && "$SELECTED_DOLT_COMMIT" == "9vtplc2tar9ver7p6s1bus2oiedjvtqo" ]]; then
     if [[ "$TARGET_TRADE_DATE/$FUTURE_START_DATE/$FUTURE_END_DATE" != "2026-07-20/2026-07-21/2026-12-31" ]]; then
         printf 'Error: fixed repair snapshot dates do not match their captured identity.\n' >&2

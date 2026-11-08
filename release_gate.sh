@@ -3,7 +3,7 @@ set -euo pipefail
 
 REPOSITORY="chenditc/investment_data"
 API_ROOT="https://api.github.com/repos/${REPOSITORY}"
-DOLTHUB_API_ROOT="https://www.dolthub.com/api/v1alpha1/chenditc/investment_data/master"
+DOLTHUB_GRAPHQL_URL="https://www.dolthub.com/graphql"
 ARCHIVE_NAME="qlib_bin.tar.gz"
 MANIFEST_NAME="qlib_bin.manifest.json"
 
@@ -51,7 +51,8 @@ github_get_release_by_tag_optional() {
     response_file="$(mktemp /tmp/investment-data-release-gate.XXXXXXXX)" \
         || return 1
     status="$(curl -sS -o "$response_file" -w '%{http_code}' \
-        --retry 3 --retry-delay 2 \
+        --connect-timeout 10 --max-time 30 \
+        --retry 1 --retry-delay 2 --retry-max-time 65 \
         -H "Authorization: Bearer ${GITHUB_TOKEN}" \
         -H "X-GitHub-Api-Version: 2022-11-28" \
         -H "Accept: application/vnd.github+json" \
@@ -106,16 +107,29 @@ release_is_complete() {
 }
 
 query_freshness() {
-    local tag=$1 sql response values source_max_date target_trade_date
+    local tag=$1 sql payload response values source_max_date target_trade_date
+    canonical_date "$tag" \
+        || { die "freshness query date is invalid"; return 1; }
     sql="SELECT (SELECT MAX(tradedate) FROM final_a_stock_eod_price) AS source_max_date, (SELECT MAX(date) FROM ts_trade_day_calendar WHERE exchange = 'SSE' AND is_open = 1 AND date <= '${tag}') AS target_trade_date"
-    response="$(curl -fsSL --retry 3 --retry-delay 2 --get \
-        "$DOLTHUB_API_ROOT" --data-urlencode "q=$sql")" \
+    payload="$(jq -cn --arg sql "$sql" '{
+        query: "query ReleaseFreshness($sql: String!) { sqlSelect(ownerName: \"chenditc\", repoName: \"investment_data\", refName: \"master\", queryString: $sql, rowLimit: 1) { queryExecutionStatus columns { name } rows { columnValues { displayValue } } } }",
+        variables: {sql: $sql}
+    }')" || return 1
+    response="$(curl -fsSL --connect-timeout 10 --max-time 30 \
+        --retry 1 --retry-delay 2 --retry-max-time 65 \
+        -H 'Content-Type: application/json' --data-binary "$payload" \
+        "$DOLTHUB_GRAPHQL_URL")" \
         || { die "DoltHub freshness query failed"; return 1; }
     values="$(jq -er '
-        select(.query_execution_status == "Success")
+        select((.errors // []) == [])
+        | .data.sqlSelect
+        | select(.queryExecutionStatus == "Success")
+        | select([.columns[].name] == ["source_max_date", "target_trade_date"])
         | .rows
         | if length == 1 then .[0] else error("unexpected row count") end
-        | [.source_max_date, .target_trade_date]
+        | .columnValues
+        | select(length == 2 and all(.[]; (.displayValue | type) == "string"))
+        | map(.displayValue)
         | @tsv
     ' <<<"$response")" \
         || { die "DoltHub freshness response is invalid"; return 1; }
@@ -149,7 +163,14 @@ publication_mode() {
         return 1
     fi
 
-    freshness="$(query_freshness "$tag")" || return 1
+    if ! freshness="$(query_freshness "$tag")"; then
+        # This is an optimization, not publication authority. publish_current
+        # builds and validates a fresh, immutable local snapshot before it can
+        # create a release or upload any asset.
+        printf '::warning::Online freshness check unavailable; deferring to mandatory local snapshot and archive validation.\n' >&2
+        printf 'publish\n'
+        return 0
+    fi
     IFS=$'\t' read -r source_max_date target_trade_date <<<"$freshness"
     if [[ "$source_max_date" == "$target_trade_date" ]]; then
         printf 'DoltHub is fresh at %s; publication may proceed.\n' \
