@@ -4,7 +4,8 @@ import datetime
 import pandas
 import fire
 import time
-import datetime
+from pathlib import Path
+from zoneinfo import ZoneInfo
 
 ts.set_token(os.environ["TUSHARE"])
 pro=ts.pro_api()
@@ -19,49 +20,70 @@ index_list = [
     '000985.SH', # csiall
     ]
 
+def _date(value):
+    text = str(value)
+    parsed = datetime.datetime.strptime(text, "%Y%m%d").date()
+    if parsed.strftime("%Y%m%d") != text:
+        raise ValueError("Index collection dates must be YYYYMMDD")
+    return parsed
+
+
+def _windows(start, end):
+    while start <= end:
+        # Tushare bounds are inclusive. Include the final partial window and
+        # move to the following day without overlapping adjacent requests.
+        stop = min(start + datetime.timedelta(days=14), end)
+        yield start.strftime("%Y%m%d"), stop.strftime("%Y%m%d")
+        start = stop + datetime.timedelta(days=1)
+
+
 def dump_index_data(start_date=None, end_date=None, skip_exists=True):
-    if not os.path.exists(f"{file_path}/index_weight/"):
-        os.makedirs(f"{file_path}/index_weight/")
+    # Keep the existing CLI argument for compatibility. Incremental downloads
+    # replace each invocation's output rather than reusing an older CSV.
+    output_dir = Path(file_path) / "index_weight"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    today = datetime.datetime.now(ZoneInfo("Asia/Shanghai")).date()
+    end = min(_date(end_date), today) if end_date is not None else today
 
     for index_name in index_list:
-        time_step = datetime.timedelta(days=15)
+        filename = output_dir / f"{index_name}.csv"
+        filename.unlink(missing_ok=True)
         if start_date is None:
             index_info = pro.index_basic(ts_code=index_name)
-            list_date = index_info["list_date"][0]
-            list_date_obj = datetime.datetime.strptime(list_date, '%Y%m%d')
-            index_start_date = list_date_obj
+            start = _date(index_info["list_date"].iloc[0])
         else:
-            index_start_date = datetime.datetime.strptime(str(start_date), '%Y%m%d')
-        
-        if end_date is None:
-            index_end_date = index_start_date + time_step
-        else:
-            index_end_date = datetime.datetime.strptime(str(end_date), '%Y%m%d')
-
-        filename = f'{file_path}/index_weight/{index_name}.csv'
-        print("Dump to: ", filename)
-        result_df_list = []
-        empty_index_data_count = 0
-        while index_end_date < datetime.datetime.now():
-            df = pro.index_weight(index_code=index_name, start_date = index_start_date.strftime('%Y%m%d'), end_date=index_end_date.strftime('%Y%m%d'))
-            index_start_date += time_step
-            index_end_date += time_step
-            if df.empty:
-                empty_index_data_count += 1
-                print("Empty index data:", index_name, index_start_date, empty_index_data_count)
-                if empty_index_data_count >= 20:
-                    print("Index data empty for 20 consecutive fetches. Stop fetching for:", index_name)
-                    break
-                time.sleep(0.5)
-                continue
-            empty_index_data_count = 0
-            result_df_list.append(df)
+            start = _date(start_date)
+        result_frames = []
+        for first, last in _windows(start, end):
+            df = pro.index_weight(
+                index_code=index_name, start_date=first, end_date=last,
+            )
             time.sleep(0.5)
-        if len(result_df_list) == 0:
+            if df.empty:
+                print(f"Empty index data: {index_name} {first}..{last}")
+                continue
+            required = ["index_code", "con_code", "trade_date", "weight"]
+            if any(column not in df for column in required):
+                raise ValueError(f"Incomplete index weight response for {index_name}")
+            df = df[required].copy()
+            dates = df["trade_date"].astype(str)
+            if not df["index_code"].eq(index_name).all() \
+                    or not dates.between(first, last).all():
+                raise ValueError(f"Unexpected index or date in response for {index_name}")
+            if df[required].isna().any().any():
+                raise ValueError(f"Null index weight fields for {index_name}")
+            result_frames.append(df)
+        if not result_frames:
+            print(f"No index snapshots returned: {index_name} {start}..{end}")
             continue
-        result_df = pandas.concat(result_df_list)
-        result_df["stock_code"] = result_df["con_code"]
-        result_df.to_csv(filename, index=False)
+        result = pandas.concat(result_frames, ignore_index=True).drop_duplicates()
+        if result.duplicated(["index_code", "con_code", "trade_date"]).any():
+            raise ValueError(f"Conflicting index weights for {index_name}")
+        result = result.rename(columns={"con_code": "stock_code"})
+        result = result[["index_code", "stock_code", "trade_date", "weight"]]
+        result = result.sort_values(["trade_date", "stock_code"])
+        result.to_csv(filename, index=False)
+        print(f"Exported {len(result)} index weight rows for {index_name}; latest={result['trade_date'].max()}")
 
 if __name__ == '__main__':
     fire.Fire(dump_index_data)

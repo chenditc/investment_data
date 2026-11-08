@@ -1088,12 +1088,13 @@ class StaticSafetyContractTest(unittest.TestCase):
                         'if [[ "$1" == fetch ]]; then : >"$MUTATION_SENTINEL"; fi\n'
                         'if [[ "$1" == status ]]; then\n'
                         '  [[ ! -e "$SERVER_SENTINEL" ]] || exit 88\n'
-                        '  if [[ "$TEST_CASE" == changed ]]; then\n'
+                        '  if [[ "$TEST_CASE" == changed || "$TEST_CASE" == push-fails ]]; then\n'
                         "    printf '%s\\n' 'modified: final_a_stock_eod_price'\n"
                         "  else\n"
                         "    printf '%s\\n' 'nothing to commit, working tree clean'\n"
                         "  fi\n"
                         "fi\n"
+                        'if [[ "$1" == push && "$TEST_CASE" == push-fails ]]; then exit 91; fi\n'
                         'if [[ "$1" == sql && "$*" == *"regular_update.sql"* ]]; then\n'
                         '  [[ -e "$SERVER_SENTINEL" ]] || exit 89\n'
                         '  : >"$REGULAR_SQL_SENTINEL"\n'
@@ -1139,6 +1140,13 @@ class StaticSafetyContractTest(unittest.TestCase):
             self.assertFalse(server_running)
             self.assertTrue(regular_sql_called)
             self.assertEqual(update_result.read_text(), "updated\n")
+
+            rejected, mutation_called, server_running, regular_sql_called, update_result = run_case("push-fails")
+            self.assertNotEqual(rejected.returncode, 0)
+            self.assertTrue(mutation_called)
+            self.assertFalse(server_running)
+            self.assertTrue(regular_sql_called)
+            self.assertFalse(update_result.exists())
 
             failed, mutation_called, server_running, regular_sql_called, update_result = run_case("update-fails")
             self.assertNotEqual(failed.returncode, 0)
