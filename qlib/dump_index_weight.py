@@ -48,6 +48,13 @@ def dump_all_to_sqlib_source(
   )
   db_connection = sql_engine.raw_connection()
   try:
+    cursor = db_connection.cursor()
+    try:
+      # The default 1024-byte limit truncates large index memberships before
+      # hashing, hiding changes outside the first few dozen constituents.
+      cursor.execute('SET SESSION group_concat_max_len = 1048576')
+    finally:
+      cursor.close()
     script_path = os.path.dirname(os.path.realpath(__file__))
     output_dir = Path(os.environ.get("QLIB_INDEX_DIR", f"{script_path}/qlib_index"))
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -59,19 +66,20 @@ def dump_all_to_sqlib_source(
 
       print("Dumping to file: ", filename)
       change_date_sql = f"""
-        SELECT MIN(trade_date) AS change_date FROM
-        (
-          SELECT trade_date,
+          SELECT trade_date AS change_date,
                  MD5(GROUP_CONCAT(stock_code ORDER BY stock_code SEPARATOR ',')) AS signature
           FROM ts_index_weight
           WHERE index_code = '{index_code}'
             {target_clause}
           GROUP BY trade_date
-        ) date_sig_table
-        GROUP BY signature
         ORDER BY change_date
       """
-      change_dates = pd.read_sql_query(change_date_sql, db_connection)["change_date"]
+      signatures = pd.read_sql_query(change_date_sql, db_connection)
+      # A -> B -> A is two transitions; grouping globally by signature loses
+      # the return to A and extends the wrong membership through the target.
+      change_dates = signatures.loc[
+          signatures['signature'].ne(signatures['signature'].shift()), 'change_date'
+      ].reset_index(drop=True)
       rows = []
       for index, change_date in enumerate(change_dates):
         start_date = pd.Timestamp(change_date).strftime("%Y-%m-%d")

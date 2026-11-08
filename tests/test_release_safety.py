@@ -511,7 +511,7 @@ class GeneratorContractTest(unittest.TestCase):
         connection = engine.raw_connection.return_value
         output = self.root / "index"
         change_dates = pd.DataFrame(
-            {"change_date": pd.to_datetime(["2026-07-17"])}
+            {"change_date": pd.to_datetime(["2026-07-17"]), "signature": ["first"]}
         )
         constituents = pd.DataFrame({"symbol": symbols})
         with mock.patch.dict(self.index.INDEX_MAP, {"csi300": "399300.SZ"}, clear=True), mock.patch.dict(
