@@ -1,34 +1,59 @@
-name: Diagnose issue 163 (read only)
+name: Repair issue 163 on a pinned Dolt branch
 on:
   workflow_dispatch:
+    inputs:
+      operation:
+        type: choice
+        options: [plan, apply, merge]
+        default: plan
+        required: true
+      repair_commit:
+        type: string
+        required: false
 permissions:
   contents: read
+  actions: read
 concurrency:
-  group: investment-data-issue163-probe
+  group: investment-data-dolt-volume
   cancel-in-progress: false
 jobs:
-  diagnose:
+  repair:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v5
         with:
           persist-credentials: false
-      - name: Fetch authoritative public market inputs
+      - uses: actions/cache/restore@v6
+        with:
+          path: ${{ runner.temp }}/investment-data-dolt
+          key: investment-data-dolt-v2-Linux-qlftrn2agatvmoo3ahr5gui8fds679jd
+      - name: Download immutable provider inputs
         env:
-          TUSHARE: ${{ secrets.TUSHARE }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh run download 42578998439 --repo chenditc/investment_data --name issue163-source-inputs --dir "$RUNNER_TEMP/issue163-inputs"
+      - name: Plan, apply on a branch, or merge the verified repair
+        env:
+          OPERATION: ${{ inputs.operation }}
+          EXPECTED_REPAIR_COMMIT: ${{ inputs.repair_commit }}
+          DOLT_CONFIG_GLOBAL_JSON: ${{ secrets.DOLT_CONFIG_GLOBAL_JSON }}
+          DOLT_JWK: ${{ secrets.DOLT_JWK }}
         run: |
           set -euo pipefail
           image=chenditc/investment_data@sha256:5d4840439689ce1e01961797d89b37d28b7ae9b41378922f9a58355fe3a1200a
           docker pull "$image"
-          mkdir -p "$RUNNER_TEMP/issue163"
-          docker run --rm --memory=2g --memory-swap=2g \
+          mkdir -p "$RUNNER_TEMP/issue163-output" "$RUNNER_TEMP/investment-data-dolt"
+          docker run --rm --memory=12g --memory-swap=12g \
             -v "$GITHUB_WORKSPACE:/repair:ro" \
-            -v "$RUNNER_TEMP/issue163:/output" \
-            -e TUSHARE "$image" python3 /repair/ops/probe_issue_163.py
+            -v "$RUNNER_TEMP/investment-data-dolt:/dolt" \
+            -v "$RUNNER_TEMP/issue163-inputs:/inputs:ro" \
+            -v "$RUNNER_TEMP/issue163-output:/output" \
+            -e OPERATION -e EXPECTED_REPAIR_COMMIT -e DOLT_CONFIG_GLOBAL_JSON -e DOLT_JWK \
+            "$image" bash /repair/ops/run_issue163_repair.sh
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: issue163-source-inputs
-          path: ${{ runner.temp }}/issue163/
+          name: issue163-repair
+          path: ${{ runner.temp }}/issue163-output/
           retention-days: 14
