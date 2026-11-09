@@ -33,6 +33,22 @@ def _validate_target_trade_date(target_trade_date: Optional[str]) -> Optional[st
   return target_trade_date
 
 
+def _coalesce_membership_intervals(rows):
+  """Keep one interval while a symbol remains continuously in the index."""
+  merged = []
+  for symbol, start, end in sorted(rows):
+    if merged and merged[-1][0] == symbol:
+      _, previous_start, previous_end = merged[-1]
+      if start <= previous_end:
+        raise ValueError(f"Overlapping index intervals for {symbol}")
+      next_day = (datetime.date.fromisoformat(previous_end) + datetime.timedelta(days=1)).isoformat()
+      if start == next_day:
+        merged[-1] = (symbol, previous_start, end)
+        continue
+    merged.append((symbol, start, end))
+  return merged
+
+
 def dump_all_to_sqlib_source(
     skip_exists=False,
     target_trade_date: Optional[str] = None,
@@ -111,6 +127,7 @@ def dump_all_to_sqlib_source(
         raise ValueError(f"Duplicate instrument rows for {index_name}")
       if not rows:
         raise ValueError(f"No index membership rows for {index_name}")
+      rows = _coalesce_membership_intervals(rows)
       with filename.open("w", encoding="utf-8", newline="\n") as stream:
         stream.write("".join("\t".join(row) + "\n" for row in rows))
   finally:

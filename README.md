@@ -48,6 +48,11 @@ python3 qlib/validate_archive.py \
 tar -zxvf qlib_bin.tar.gz -C ~/.qlib/qlib_data/cn_data --strip-components=1
 ```
 
+Index instruments files contain `symbol`, inclusive start date, and inclusive
+end date. Continuous membership is stored as one interval; a symbol can have
+multiple rows if it leaves the index and later returns. Historical members
+remain in the file even when they are absent from the latest index snapshot.
+
 # Developement Setup
 If you want to contribute to the set of scripts or the data, here is what you should do to set up a dev environment.
 
@@ -125,6 +130,13 @@ validation; a failed local check still prevents release creation and uploads.
 The target trading day must also contain more than 1,000 price rows, matching
 the collector's existing completion floor, so index-only updates cannot make
 an otherwise stale stock snapshot publishable.
+
+The fixed historical operation `repair-2026-11-08` repairs issue #163 using
+the pinned corrected Dolt commit. It runs only through a manual `main`
+workflow, verifies the captured original release/asset identities, preserves
+and redownloads both originals in a separate backup prerelease, stages and
+validates the new pair, then replaces the canonical names and validates the
+downloaded result. Prepared and accepted receipts remain in the backup release.
 
 ### Fail-safe repository rollback
 

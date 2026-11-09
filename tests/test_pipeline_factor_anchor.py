@@ -26,6 +26,10 @@ class FactorAnchorTest(unittest.TestCase):
     def test_stable_factor_accepts_float_storage_rounding(self):
         self.check(1.14410005,1.1441)
 
+    def test_issue163_one_day_restatement_is_rejected(self):
+        with self.assertRaisesRegex(RuntimeError,'history changed'):
+            self.check(36.186273/21.51,1.5677)
+
     def test_nonpositive_or_missing_factor_is_rejected(self):
         for value in [0.,-1.,float('nan')]:
             with self.subTest(value=value),self.assertRaises(RuntimeError):
