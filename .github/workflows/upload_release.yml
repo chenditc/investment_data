@@ -12,6 +12,7 @@ on:
           - validate
           - build
           - repair-2026-07-20
+          - repair-2026-11-08
   schedule:
     - cron: '47 10 * * *' # 18:47 Asia/Shanghai: early fresh-data opportunity
     - cron: '17 11,12 * * *' # 19:17 and 20:17 Asia/Shanghai: staggered fallbacks
@@ -109,7 +110,7 @@ jobs:
           [[ "$GITHUB_REPOSITORY" == "chenditc/investment_data" ]]
           [[ "$GITHUB_SHA" =~ ^[0-9a-f]{40}$ ]]
           [[ "$GITHUB_EVENT_NAME" == "schedule" || "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]
-          [[ "$OPERATION" == "publish" || "$OPERATION" == "validate" || "$OPERATION" == "build" || "$OPERATION" == "repair-2026-07-20" ]]
+          [[ "$OPERATION" == "publish" || "$OPERATION" == "validate" || "$OPERATION" == "build" || "$OPERATION" == "repair-2026-07-20" || "$OPERATION" == "repair-2026-11-08" ]]
           if [[ "$GITHUB_EVENT_NAME" == "schedule" ]]; then
             [[ "$OPERATION" == "publish" ]]
           fi
@@ -165,6 +166,9 @@ jobs:
           container_command=(bash upload_release.sh "${args[@]}")
           if [[ "$OPERATION" == "build" ]]; then
             container_command=(bash ops/build_source_repair_package.sh)
+          fi
+          if [[ "$OPERATION" == "repair-2026-11-08" ]]; then
+            container_command=(bash ops/repair_release_20261108.sh)
           fi
           if [[ "$OPERATION" == "validate" ]]; then
             container_command=(bash -lc '
@@ -233,6 +237,17 @@ jobs:
             ${{ runner.temp }}/release-output/qlib_bin.manifest.json
           if-no-files-found: error
           compression-level: 0
+          retention-days: 14
+
+      - name: Save historical repair evidence
+        if: ${{ always() && inputs.operation == 'repair-2026-11-08' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-repair-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/release-output/repair-result.json
+            ${{ runner.temp }}/release-output/qlib_bin.manifest.json
+          if-no-files-found: warn
           retention-days: 14
 
       - name: Verify the build snapshot

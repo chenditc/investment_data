@@ -14,6 +14,27 @@ spec=importlib.util.spec_from_file_location('tested_index_transitions',path)
 module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
 
 class IndexTransitionsTest(unittest.TestCase):
+    def test_continuous_membership_is_compact_but_absence_and_return_remain_separate(self):
+        rows = [
+            ('SZ000001', '2025-12-30', '2025-12-31'),
+            ('SZ000001', '2026-01-01', '2026-01-02'),
+            ('SZ000001', '2026-01-04', '2026-01-05'),
+            ('SZ000002', '2025-12-30', '2026-01-05'),
+        ]
+        compact = module._coalesce_membership_intervals(reversed(rows))
+        self.assertEqual(len(compact), 3)
+        # Compare every date, including the day of absence, for both symbols.
+        for day in pd.date_range('2025-12-30', '2026-01-05'):
+            date = day.strftime('%Y-%m-%d')
+            original = {s for s, start, end in rows if start <= date <= end}
+            actual = {s for s, start, end in compact if start <= date <= end}
+            self.assertEqual(actual, original, date)
+        with self.assertRaisesRegex(ValueError, 'Overlapping'):
+            module._coalesce_membership_intervals([
+                ('SZ000001', '2026-01-01', '2026-01-03'),
+                ('SZ000001', '2026-01-03', '2026-01-05'),
+            ])
+
     @unittest.skipUnless(os.environ.get('DOLT_BIN') or shutil.which('dolt'),'Dolt engine unavailable')
     def test_real_dolt_detects_late_constituent_change_and_return_to_prior_set(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -37,6 +58,7 @@ class IndexTransitionsTest(unittest.TestCase):
             self.assertIn('SZ000150\t2026-01-30\t2026-02-26\n',text)
             self.assertIn('SZ000150\t2026-03-31\t2026-03-31\n',text)
             self.assertIn('SZ000151\t2026-02-27\t2026-03-30\n',text)
-            self.assertEqual(len(text.splitlines()),450)
+            self.assertIn('SZ000001\t2026-01-30\t2026-03-31\n',text)
+            self.assertEqual(len(text.splitlines()),152)
 
 if __name__=='__main__':unittest.main()

@@ -686,7 +686,7 @@ class StaticSafetyContractTest(unittest.TestCase):
         self.assertEqual(operation["default"], "publish")
         self.assertEqual(
             operation["options"],
-            ["publish", "validate", "build", "repair-2026-07-20"],
+            ["publish", "validate", "build", "repair-2026-07-20", "repair-2026-11-08"],
         )
         self.assertEqual(
             document["on"]["schedule"],
