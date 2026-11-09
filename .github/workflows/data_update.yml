@@ -4,7 +4,7 @@ on:
     inputs:
       operation:
         type: choice
-        options: [plan, apply, merge]
+        options: [plan, apply, merge, diagnose-cache]
         default: plan
         required: true
       repair_commit:

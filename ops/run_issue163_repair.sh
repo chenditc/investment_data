@@ -6,7 +6,20 @@ if [[ ! -d /dolt/investment_data/.dolt ]]; then
   (cd /dolt && dolt clone --depth 1 --branch master chenditc/investment_data investment_data)
 fi
 cd /dolt/investment_data
-dolt status | grep -q 'nothing to commit, working tree clean'
+if [[ "$OPERATION" == diagnose-cache ]]; then
+  dolt status >/output/status-before.txt
+  dolt fetch origin master
+  dolt status >/output/status-after.txt
+  dolt diff --stat >/output/diff-stat.txt
+  set +e
+  for attempt in {1..20}; do
+    (dolt status) | grep -q 'nothing to commit, working tree clean'
+    printf '%s,%s\n' "$attempt" "$?" >>/output/pipeline-exit-codes.csv
+  done
+  set -e
+  exit 0
+fi
+dolt status | grep -q 'nothing to commit, working tree clean' 
 dolt checkout master
 dolt fetch origin master
 base=qlftrn2agatvmoo3ahr5gui8fds679jd
