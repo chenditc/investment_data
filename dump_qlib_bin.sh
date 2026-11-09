@@ -140,7 +140,11 @@ if [[ ! -d "$SHARED_DOLT_CHECKOUT/.dolt" ]]; then
         && dolt clone --depth 1 --branch master \
             chenditc/investment_data investment_data)
 fi
-if ! (cd "$SHARED_DOLT_CHECKOUT" && dolt status) | grep -q 'nothing to commit, working tree clean'; then
+if ! SHARED_DOLT_STATUS="$(cd "$SHARED_DOLT_CHECKOUT" && dolt status)"; then
+    printf 'Error: failed to inspect shared Dolt checkout.\n' >&2
+    exit 1
+fi
+if ! grep -q 'nothing to commit, working tree clean' <<<"$SHARED_DOLT_STATUS"; then
     printf 'Error: shared Dolt checkout is not clean.\n' >&2
     exit 1
 fi
