@@ -296,9 +296,10 @@ select_normal_dolt_commit() {
                 chenditc/investment_data investment_data) >&2 \
             || { die "failed to clone shared Dolt checkout"; return 1; }
     fi
-    status_output="$(cd "$checkout" && dolt status)" \
+    status_output="$(cd "$checkout" && dolt sql -r csv -q 'SELECT COUNT(*) AS dirty_rows FROM dolt_status')" \
         || { die "failed to inspect shared Dolt checkout"; return 1; }
-    grep -q 'nothing to commit, working tree clean' <<<"$status_output" \
+    status_output="${status_output//$'\r'/}"
+    [[ "$status_output" == $'dirty_rows\n0' ]] \
         || { die "shared Dolt checkout is not clean"; return 1; }
     printf 'Fetching shared Dolt origin/master.\n' >&2
     (cd "$checkout" && dolt fetch --silent origin master) >&2 \
