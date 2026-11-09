@@ -1223,7 +1223,13 @@ exit 0
             "dolt",
             r'''case "$1" in
   status) printf '%s\n' 'nothing to commit, working tree clean' ;;
-  sql) printf '%s\n' value '9vtplc2tar9ver7p6s1bus2oiedjvtqo' ;;
+  sql)
+    if [[ "$*" == *dolt_status* ]]; then
+      printf '%s\n' dirty_rows 0
+    else
+      printf '%s\n' value '9vtplc2tar9ver7p6s1bus2oiedjvtqo'
+    fi
+    ;;
   sql-server) trap 'exit 0' TERM; while :; do /bin/sleep 1; done ;;
 esac
 exit 0
@@ -2111,7 +2117,11 @@ class PublisherStateSimulationTest(unittest.TestCase):
                 return "$FETCH_STATUS"
                 ;;
               sql)
-                printf '%s\n' value '9vtplc2tar9ver7p6s1bus2oiedjvtqo'
+                if [[ "$*" == *dolt_status* ]]; then
+                  printf '%s\n' dirty_rows 0
+                else
+                  printf '%s\n' value '9vtplc2tar9ver7p6s1bus2oiedjvtqo'
+                fi
                 ;;
               *) return 92 ;;
             esac
@@ -2232,7 +2242,7 @@ class PublisherStateSimulationTest(unittest.TestCase):
             case "$1" in
               status) printf '%s\n' 'modified tables present' ;;
               fetch) return 0 ;;
-              sql) printf '%s\n' 'value' '9vtplc2tar9ver7p6s1bus2oiedjvtqo' ;;
+              sql) printf '%s\n' dirty_rows 1 ;;
             esac
           }
           build_pair() { : >"$WORK_DIR/build"; }

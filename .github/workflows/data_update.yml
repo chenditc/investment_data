@@ -178,8 +178,8 @@ jobs:
             bash -lc '
               set -euo pipefail
               cd /dolt/investment_data
-              status="$(dolt status)"
-              grep -q "nothing to commit, working tree clean" <<<"$status"
+              dirty_rows="$(dolt sql -r csv -q "SELECT COUNT(*) AS dirty_rows FROM dolt_status" | tail -n 1 | tr -d "\r")"
+              [[ "$dirty_rows" == 0 ]]
               dolt fetch --silent origin master
               local_commit="$(dolt sql -r csv -q "SELECT DOLT_HASHOF('\''HEAD'\'') AS value" | tail -n 1 | tr -d "\r")"
               remote_commit="$(dolt sql -r csv -q "SELECT DOLT_HASHOF('\''origin/master'\'') AS value" | tail -n 1 | tr -d "\r")"
