@@ -118,6 +118,15 @@ Dispatch the normal publisher with:
 gh workflow run upload_release.yml --repo chenditc/investment_data --ref main -f operation=publish
 ```
 
+If a day's publication was missed and collection finishes after midnight,
+dispatch `operation=publish-previous-day` after the collector succeeds. This
+manual-only operation derives yesterday's calendar date in Asia/Shanghai and
+uses the same publisher, immutable source selection, archive validation and
+remote download checks as normal publication. The source must exactly reach
+the trading day for that date and contain more than 1,000 price rows; an older,
+newer or index-only snapshot is rejected before any release is created.
+It accepts no custom date or source override and preserves existing assets.
+
 `upload_release.sh` is workflow-internal and rejects direct/local/container
 publication. The workflow validates the ten-field manifest and the complete
 archive before any release mutation, then redownloads and validates both

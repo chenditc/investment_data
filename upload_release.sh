@@ -29,7 +29,7 @@ die() {
 }
 
 usage() {
-    printf 'usage: %s [validate-existing|repair-2026-07-20]\n' "${0##*/}" >&2
+    printf 'usage: %s [validate-existing|publish-previous-day|repair-2026-07-20]\n' "${0##*/}" >&2
 }
 
 sha256_file() {
@@ -333,6 +333,10 @@ build_pair() {
 
 preflight() {
     local operation=$1 variable baked_repository baked_qlib
+    if [[ "$operation" == "publish-previous-day" && "${GITHUB_EVENT_NAME:-}" != "workflow_dispatch" ]]; then
+        die "previous-day publication requires workflow_dispatch"
+        return 1
+    fi
     for variable in QLIB_BUILD_ID QLIB_BUILD_ROOT CLEAN_QLIB_BUILD_ROOT CHECK_FRESHNESS REPO DATE UPLOAD_RELEASE_LOCK_FILE; do
         if [[ -v "$variable" ]]; then
             die "$variable is not a supported publisher input"
@@ -451,9 +455,24 @@ validate_existing_release() {
 }
 
 publish_current() {
+    local tag
+    tag="$(TZ=Asia/Shanghai date +%F)" || return 1
+    publish_for_tag "$tag"
+}
+
+publish_previous_day() {
+    local today tag
+    [[ "${GITHUB_EVENT_NAME:-}" == "workflow_dispatch" ]] \
+        || { die "previous-day publication requires workflow_dispatch"; return 1; }
+    today="$(TZ=Asia/Shanghai date +%F)" || return 1
+    tag="$(TZ=Asia/Shanghai date -d "$today -1 day" +%F)" || return 1
+    publish_for_tag "$tag"
+}
+
+publish_for_tag() {
     local tag dolt_commit build_dir archive manifest assets archive_slot manifest_slot
     local archive_state manifest_state downloaded_archive downloaded_manifest
-    tag="$(TZ=Asia/Shanghai date +%F)" || return 1
+    tag=$1
     dolt_commit="$(select_normal_dolt_commit)" || return 1
     build_dir="$WORK_DIR/build"
     mkdir -p "$build_dir" || return 1
@@ -1178,7 +1197,7 @@ main() {
     if (($# == 0)); then
         operation=publish
     elif (($# == 1)) \
-        && [[ "$1" == "validate-existing" || "$1" == "repair-2026-07-20" ]]; then
+        && [[ "$1" == "validate-existing" || "$1" == "publish-previous-day" || "$1" == "repair-2026-07-20" ]]; then
         operation=$1
     else
         usage
@@ -1190,6 +1209,7 @@ main() {
     trap 'status=$?; [[ -z "$WORK_DIR" || ! -d "$WORK_DIR" ]] || rm -rf -- "$WORK_DIR"; exit "$status"' EXIT
     case "$operation" in
         publish) publish_current ;;
+        publish-previous-day) publish_previous_day ;;
         validate-existing) validate_existing_release ;;
         repair-2026-07-20) repair_fixed_release ;;
     esac

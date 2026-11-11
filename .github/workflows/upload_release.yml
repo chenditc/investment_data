@@ -9,6 +9,7 @@ on:
         default: publish
         options:
           - publish
+          - publish-previous-day
           - validate
           - build
           - repair-2026-07-20
@@ -110,7 +111,7 @@ jobs:
           [[ "$GITHUB_REPOSITORY" == "chenditc/investment_data" ]]
           [[ "$GITHUB_SHA" =~ ^[0-9a-f]{40}$ ]]
           [[ "$GITHUB_EVENT_NAME" == "schedule" || "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]
-          [[ "$OPERATION" == "publish" || "$OPERATION" == "validate" || "$OPERATION" == "build" || "$OPERATION" == "repair-2026-07-20" || "$OPERATION" == "repair-2026-11-08" ]]
+          [[ "$OPERATION" == "publish" || "$OPERATION" == "publish-previous-day" || "$OPERATION" == "validate" || "$OPERATION" == "build" || "$OPERATION" == "repair-2026-07-20" || "$OPERATION" == "repair-2026-11-08" ]]
           if [[ "$GITHUB_EVENT_NAME" == "schedule" ]]; then
             [[ "$OPERATION" == "publish" ]]
           fi
@@ -152,7 +153,9 @@ jobs:
           free -h
 
           args=()
-          if [[ "$OPERATION" == "repair-2026-07-20" ]]; then
+          if [[ "$OPERATION" == "publish-previous-day" ]]; then
+            args=(publish-previous-day)
+          elif [[ "$OPERATION" == "repair-2026-07-20" ]]; then
             args=(repair-2026-07-20)
           elif [[ "${{ steps.publication-gate.outputs.mode }}" == "validate-existing" ]]; then
             args=(validate-existing)
