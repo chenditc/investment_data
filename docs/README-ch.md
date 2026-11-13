@@ -43,6 +43,8 @@ python3 qlib/validate_archive.py \
 tar -zxvf qlib_bin.tar.gz -C ~/.qlib/qlib_data/cn_data --strip-components=1
 ```
 
+可选社区工具：[qlib-sync](https://github.com/randyy179/qlib-sync) 可自动下载和更新本数据集，由第三方独立维护，与 investment_data 无关。
+
 # 开发设置
 如果你想为这套脚本或数据做出贡献，你应该如何设置开发环境。
 
