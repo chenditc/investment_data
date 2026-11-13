@@ -668,6 +668,13 @@ class StaticSafetyContractTest(unittest.TestCase):
         self.assertIn("sha-${{ github.sha }}", image)
         self.assertIn("INVESTMENT_DATA_REVISION=${{ github.sha }}", image)
         self.assertIn('if [[ "$GITHUB_REF" == "refs/heads/main" ]]', image)
+        import yaml
+
+        image_steps = yaml.load(image, Loader=yaml.BaseLoader)["jobs"]["docker"]["steps"]
+        login = next(step for step in image_steps if step.get("uses", "").startswith("docker/login-action@"))
+        build = next(step for step in image_steps if step.get("uses", "").startswith("docker/build-push-action@"))
+        self.assertEqual(login["if"], "${{ github.event_name != 'pull_request' }}")
+        self.assertEqual(build["with"]["push"], login["if"])
         self.assertIn(QLIB_COMMIT, dockerfile)
         self.assertIn("org.opencontainers.image.revision", dockerfile)
         self.assertIn("/opt/investment-data/REVISION", dockerfile)
