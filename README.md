@@ -48,6 +48,8 @@ python3 qlib/validate_archive.py \
 tar -zxvf qlib_bin.tar.gz -C ~/.qlib/qlib_data/cn_data --strip-components=1
 ```
 
+Optional community tool: [qlib-sync](https://github.com/randyy179/qlib-sync) automates downloading and updating this dataset. It is maintained independently of investment_data.
+
 Index instruments files contain `symbol`, inclusive start date, and inclusive
 end date. Continuous membership is stored as one interval; a symbol can have
 multiple rows if it leaves the index and later returns. Historical members
