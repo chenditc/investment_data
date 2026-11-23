@@ -115,6 +115,10 @@ def apply(db,directory=PLAN):
         if any(r['symbol'] not in actual or not equal(r['scale'],actual[r['symbol']]['scale'])
                or str(actual[r['symbol']]['effective_date'])[:10]!=r['effective_date'] for r in rows):
             raise ValueError('Installed provider scale metadata changed')
+        for change in changes:
+            bars=db.query("SELECT adjclose FROM ts_a_stock_eod_price WHERE symbol='%s' AND tradedate='%s'"%(change['symbol'],change['tradedate']))
+            if len(bars)!=1 or not equal(bars[0]['adjclose'],change['raw_adjclose']):
+                raise ValueError('Installed raw adjustment value changed')
         return 'unchanged'
     if db.query("SELECT DOLT_HASHOF('HEAD') h")[0]['h']!=BASE:
         raise ValueError('Pinned source base changed')

@@ -83,6 +83,12 @@ class ScaleInstallTest(unittest.TestCase):
                 self.assertEqual(module.apply(db,planpath),'unchanged')
                 self.assertEqual(db.query("SELECT COUNT(*) n FROM dolt_diff('%s','HEAD','final_a_stock_eod_price')"%base)[0]['n'],0)
                 self.assertEqual(db.query("SELECT COUNT(*) n FROM dolt_diff('%s','HEAD','ts_a_stock_eod_price')"%base)[0]['n'],1)
+                db.run('sql','-q',"UPDATE ts_a_stock_eod_price SET adjclose=20.001 WHERE symbol='002122.SZ' AND tradedate='2026-11-23'")
+                db.run('add','-A');db.run('commit','-m','revert correction fixture')
+                with self.assertRaisesRegex(ValueError,'raw adjustment value changed'):
+                    module.apply(db,planpath)
+                db.run('sql','-q',"UPDATE ts_a_stock_eod_price SET adjclose=20 WHERE symbol='002122.SZ' AND tradedate='2026-11-23'")
+                db.run('add','-A');db.run('commit','-m','restore correction fixture')
                 db.run('sql','-q',"UPDATE ts_provider_factor_scale SET scale=3 WHERE symbol='000001.SZ'")
                 db.run('add','-A');db.run('commit','-m','tamper fixture')
                 with self.assertRaisesRegex(ValueError,'metadata changed'):
