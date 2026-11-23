@@ -281,7 +281,7 @@ validate_pair() {
         --archive "$1" --manifest "$2" --expected-tag "$3" --require-publishable >/dev/null
 }
 
-select_normal_dolt_commit() {
+select_normal_dolt_commit() (
     local dolt_dir=/dolt checkout=/dolt/investment_data commit status_output
     mkdir -p "$dolt_dir" \
         || { die "cannot create shared Dolt directory"; return 1; }
@@ -289,6 +289,9 @@ select_normal_dolt_commit() {
         || { die "cannot open shared Dolt checkout lock"; return 1; }
     flock -n 8 \
         || { die "shared Dolt checkout lock is held"; return 1; }
+    # Dolt may launch a background metrics process that inherits descriptor 8.
+    # Explicitly unlock on failures as well as success; scope the EXIT trap here.
+    trap 'flock -u 8 || true; exec 8>&-' EXIT
     if [[ ! -d "$checkout/.dolt" ]]; then
         printf 'Cloning shared Dolt checkout.\n' >&2
         (cd "$dolt_dir" \
@@ -312,10 +315,11 @@ select_normal_dolt_commit() {
         || { die "failed to release shared Dolt checkout lock"; return 1; }
     exec 8>&- \
         || { die "failed to close shared Dolt checkout lock"; return 1; }
+    trap - EXIT
     [[ "$commit" =~ ^[0-9a-v]{32}$ ]] \
         || { die "unable to select Dolt commit"; return 1; }
     printf '%s\n' "$commit"
-}
+)
 
 build_pair() {
     local tag=$1 dolt_commit=$2 output_dir=$3

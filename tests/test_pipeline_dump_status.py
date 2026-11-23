@@ -53,6 +53,36 @@ sys.exit(98)
         self.assertFalse(fetched)
         self.assertNotEqual(result.returncode,0)
 
+    def test_failed_snapshot_check_unlocks_even_when_a_child_inherits_the_descriptor(self):
+        import signal
+        with tempfile.TemporaryDirectory() as temporary:
+            root=Path(temporary);dolt_root=root/'dolt';(dolt_root/'investment_data/.dolt').mkdir(parents=True)
+            tools=root/'bin';tools.mkdir();pidfile=root/'child.pid'
+            fake=tools/'dolt'
+            fake.write_text("""#!/usr/bin/env python3
+import os,subprocess
+from pathlib import Path
+child=subprocess.Popen(['sleep','30'],close_fds=False,stdin=subprocess.DEVNULL,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+Path(os.environ['CHILD_PID']).write_text(str(child.pid))
+print('dirty_rows\\n1')
+""")
+            fake.chmod(0o755)
+            body=r'''source "$PUBLISHER"
+eval "$(declare -f select_normal_dolt_commit | sed 's#local dolt_dir=/dolt checkout=/dolt/investment_data commit#local dolt_dir="$TEST_DOLT_ROOT" checkout="$TEST_DOLT_ROOT/investment_data" commit#')"
+select_normal_dolt_commit
+'''
+            env={**os.environ,'PATH':str(tools)+os.pathsep+os.environ['PATH'],'PUBLISHER':str(ROOT/'upload_release.sh'),'TEST_DOLT_ROOT':str(dolt_root),'CHILD_PID':str(pidfile)}
+            try:
+                result=subprocess.run(['bash','-c',body],env=env,capture_output=True,text=True)
+                self.assertNotEqual(result.returncode,0)
+                self.assertIn('not clean',result.stderr)
+                probe=subprocess.run(['flock','-n',str(dolt_root/'.investment-data.lock'),'true'],capture_output=True,text=True)
+                self.assertEqual(probe.returncode,0,probe.stderr)
+            finally:
+                if pidfile.exists():
+                    try:os.kill(int(pidfile.read_text()),signal.SIGTERM)
+                    except ProcessLookupError:pass
+
     @unittest.skipUnless(os.environ.get('DOLT_BIN') or shutil.which('dolt'),'Dolt engine unavailable')
     def test_real_dolt_behind_remote_is_clean_but_staged_and_unstaged_changes_are_not(self):
         with tempfile.TemporaryDirectory() as temporary:
