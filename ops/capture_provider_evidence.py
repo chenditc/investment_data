@@ -13,8 +13,8 @@ def main():
     output = Path("/evidence")
     output.mkdir(exist_ok=True, parents=True)
     manifest = []
-    for date in ("20261120", "20261123"):
-        for api in ("adj_factor", "daily"):
+    for date in ("20260903", "20260910", "20260914", "20261012", "20261027", "20261028", "20261109", "20261111", "20261112", "20261118", "20261119", "20261120", "20261123"):
+        for api in (("adj_factor", "daily") if date in ("20261120", "20261123") else ("adj_factor",)):
             frame = getattr(pro, api)(trade_date=date)
             if frame.empty or not frame["trade_date"].eq(date).all():
                 raise ValueError("Missing or wrong-date provider evidence: " + api + " " + date)
