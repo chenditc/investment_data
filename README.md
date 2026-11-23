@@ -107,6 +107,17 @@ expected trading days, and incomplete price/adjustment-factor pairs stop the
 update before it can commit or advance past a missing day.
 
 ## Daily update and output
+
+Provider factor-base conversions are stored in Dolt's `ts_provider_factor_scale`
+with their reference dates and captured factor values. Collection aligns both
+anchor checks and new adjusted closes to the registered canonical basis; the
+existing restatement tolerance remains unchanged. Existing securities without
+a registered scale must pass a separate historical anchor check before import.
+For the audited 2026-11-23 incident, manually dispatch `data_update.yml` on
+`main` with `operation=install-provider-scale-2026-11-23`. The pinned installer
+checks its source commit and reference values, records the plan in Dolt, and
+corrects one unpublished raw adjustment cell without changing canonical prices.
+It refuses a changed source base and supports verified repeated execution.
 ```
 docker run -v /<some output directory>:/output -it --rm chenditc/investment_data \
   bash -lc 'bash daily_update.sh && bash dump_qlib_bin.sh'

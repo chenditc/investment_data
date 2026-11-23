@@ -2,6 +2,15 @@ name: Update Investment Data
 
 on:
   workflow_dispatch:
+    inputs:
+      operation:
+        description: Update data or install the audited Nov23 provider basis
+        required: true
+        default: update
+        type: choice
+        options:
+          - update
+          - install-provider-scale-2026-11-23
   schedule:
     - cron: '30 * * * *' # Runs at 30 minutes past the hour, every hour
 
@@ -91,6 +100,7 @@ jobs:
         DOLT_JWK: ${{ secrets.DOLT_JWK }}
         TUSHARE: ${{ secrets.TUSHARE }}
         IMAGE_REFERENCE: ${{ steps.image.outputs.reference }}
+        SOURCE_UPDATE_OPERATION: ${{ inputs.operation || 'update' }}
       run: |
         set -euo pipefail
         docker rm -f daily_dolt_update >/dev/null 2>&1 || true
@@ -115,6 +125,8 @@ jobs:
           -e DOLT_JWK \
           -e TUSHARE \
           -e DAILY_UPDATE_RESULT_FILE=/tmp/daily-update-result/result \
+          -e SOURCE_UPDATE_OPERATION \
+          -e GITHUB_REF -e GITHUB_EVENT_NAME -e GITHUB_SHA \
           -e MALLOC_ARENA_MAX=2 \
           -e OMP_NUM_THREADS=1 \
           -e OPENBLAS_NUM_THREADS=1 \
@@ -128,7 +140,11 @@ jobs:
           printf "%s\n" "$DOLT_JWK" > /root/.dolt/creds/j6ooicvf6t6a0c18pinnr0p6ao69eglbcsfmmh2247d50.jwk
           : >"$DAILY_UPDATE_RESULT_FILE"
 
-          bash daily_update.sh
+          case "$SOURCE_UPDATE_OPERATION" in
+            update) bash daily_update.sh ;;
+            install-provider-scale-2026-11-23) python3 ops/install_provider_scale_20261123.py ;;
+            *) echo "Invalid source update operation" >&2; exit 2 ;;
+          esac
           ' &
         run_pid=$!
 

@@ -1,0 +1,155 @@
+{
+  "base_commit": "ibkrne7d73nal8pbg8ua3vu47nareksl",
+  "last_good_commit": "e5u75bq00p6u6t506du27p7k4ojueb2s",
+  "last_good_release": "2026-11-20",
+  "effective_date": "2026-11-23",
+  "provider_evidence_run": 45215005519,
+  "provider_evidence_branch_commit": "52276b68981f410372d943f899dd235b7b62dcf5",
+  "provider_inputs": [
+    {
+      "api": "adj_factor",
+      "trade_date": "20260903",
+      "file": "adj_factor-20260903.json",
+      "rows": 5555,
+      "sha256": "b37e7d8d5c8c59d6c2fa70ef4755fba965cf7c82e92858bbea9e6f5c1b00f8ea",
+      "captured_at_utc": "2026-11-23T16:19:13.342477+00:00"
+    },
+    {
+      "api": "adj_factor",
+      "trade_date": "20260910",
+      "file": "adj_factor-20260910.json",
+      "rows": 5561,
+      "sha256": "c40a0503762af0da188ca4b50d5c4fc798e337e1e3795f0098f3f8315be752f7",
+      "captured_at_utc": "2026-11-23T16:19:14.360609+00:00"
+    },
+    {
+      "api": "adj_factor",
+      "trade_date": "20260914",
+      "file": "adj_factor-20260914.json",
+      "rows": 5562,
+      "sha256": "6b5dbdded8da1ef9227dfa9423c660ae8de4e5263d52894726c7627997653e89",
+      "captured_at_utc": "2026-11-23T16:19:15.354762+00:00"
+    },
+    {
+      "api": "adj_factor",
+      "trade_date": "20261012",
+      "file": "adj_factor-20261012.json",
+      "rows": 5573,
+      "sha256": "ed58016e66dd5b77d6967fca3eaf24c8dd2c5f6beb05fd616473504a32cc9841",
+      "captured_at_utc": "2026-11-23T16:19:16.331271+00:00"
+    },
+    {
+      "api": "adj_factor",
+      "trade_date": "20261027",
+      "file": "adj_factor-20261027.json",
+      "rows": 5577,
+      "sha256": "8cb258f1147456d9150ff87700954a6111ec1742598180b8bd81ab548c15c8f7",
+      "captured_at_utc": "2026-11-23T16:19:17.076314+00:00"
+    },
+    {
+      "api": "adj_factor",
+      "trade_date": "20261028",
+      "file": "adj_factor-20261028.json",
+      "rows": 5576,
+      "sha256": "5a61d36cceffba4760c8f763afac75d320254ce3e698080ac32a92e23432c0b2",
+      "captured_at_utc": "2026-11-23T16:19:17.864303+00:00"
+    },
+    {
+      "api": "adj_factor",
+      "trade_date": "20261109",
+      "file": "adj_factor-20261109.json",
+      "rows": 5579,
+      "sha256": "26d616135e9eb75b5c13141a867b58ac7ffe0360c0a06f3d1a937111f8469a0e",
+      "captured_at_utc": "2026-11-23T16:19:18.861015+00:00"
+    },
+    {
+      "api": "adj_factor",
+      "trade_date": "20261111",
+      "file": "adj_factor-20261111.json",
+      "rows": 5580,
+      "sha256": "69894fd26da65b008a06413a76011f07d9c768c4a6fec2b9c97238aebe3551eb",
+      "captured_at_utc": "2026-11-23T16:19:19.937486+00:00"
+    },
+    {
+      "api": "adj_factor",
+      "trade_date": "20261112",
+      "file": "adj_factor-20261112.json",
+      "rows": 5580,
+      "sha256": "1f0ea3bd9304f6500598c8db4c447ec6a11077df6901943ffe1d8d68fc6c5edf",
+      "captured_at_utc": "2026-11-23T16:19:20.667609+00:00"
+    },
+    {
+      "api": "adj_factor",
+      "trade_date": "20261118",
+      "file": "adj_factor-20261118.json",
+      "rows": 5580,
+      "sha256": "acb0b60fe59903d45ec53c62f82105728b4396d35fa4525258fecf044f1afdd9",
+      "captured_at_utc": "2026-11-23T16:19:21.361153+00:00"
+    },
+    {
+      "api": "adj_factor",
+      "trade_date": "20261119",
+      "file": "adj_factor-20261119.json",
+      "rows": 5580,
+      "sha256": "222f4d6ab022c19b5058658bde771516d5a300f0ffdd638c50d610b5a79deb3f",
+      "captured_at_utc": "2026-11-23T16:19:22.289380+00:00"
+    },
+    {
+      "api": "adj_factor",
+      "trade_date": "20261120",
+      "file": "adj_factor-20261120.json",
+      "rows": 5575,
+      "sha256": "3f6b78aa0817663e90aae7b240983fe04cfb3b2c80a7bf4f0f0a615d339b123d",
+      "captured_at_utc": "2026-11-23T16:19:23.466357+00:00"
+    },
+    {
+      "api": "daily",
+      "trade_date": "20261120",
+      "file": "daily-20261120.json",
+      "rows": 5572,
+      "sha256": "0ddf537e3f927a299a98b62f2aa65a2be5013b4d86322e2f80e98ccd2c186d0c",
+      "captured_at_utc": "2026-11-23T16:19:24.668690+00:00"
+    },
+    {
+      "api": "adj_factor",
+      "trade_date": "20261123",
+      "file": "adj_factor-20261123.json",
+      "rows": 5586,
+      "sha256": "470ca5c22c246594c6bc81e8a375791b2d84660e446cd00c7249f898077c2ec4",
+      "captured_at_utc": "2026-11-23T16:19:25.349491+00:00"
+    },
+    {
+      "api": "daily",
+      "trade_date": "20261123",
+      "file": "daily-20261123.json",
+      "rows": 5570,
+      "sha256": "bd5646bfd70e1c4f339610c4455cb80cda3c095b46bdffae7344dd64a801578e",
+      "captured_at_utc": "2026-11-23T16:19:26.543350+00:00"
+    }
+  ],
+  "rows": 5586,
+  "current_stock_anchors_checked": 5570,
+  "new_listings": [
+    "920067.BJ"
+  ],
+  "scales_sha256": "aff879350a846caabe8733fb9ea2fe94da003f53da16df49daffaafc296baa08",
+  "adjustments_sha256": "2a65b5905ae671eb4c51418e91986f3784ff6319970f94bd57b0117469e8964c",
+  "raw_adjustment_cells": 1,
+  "final_adjustment_cells": 0,
+  "adjustments": [
+    {
+      "symbol": "002122.SZ",
+      "old_factor": 8.472,
+      "aligned_factor": 8.471700010622852,
+      "old_raw_adjclose": 25.077119999999997,
+      "raw_adjclose": 25.07623203144364,
+      "tradedate": "2026-11-23",
+      "final_symbol": "SZ002122",
+      "old_final_adjclose": 25.08,
+      "final_adjclose": 25.08
+    }
+  ],
+  "method": "Preserve the published canonical factor basis using stored_factor / provider_factor at the last verified quote. Validate the existing Nov23 raw prices and their relative factor movements before installing metadata; retain the unchanged 1e-5 factor guard.",
+  "max_current_anchor_relative_difference_before_correction": 3.541076487260008e-05,
+  "max_current_anchor_relative_difference_after_correction": 4.542200686574738e-06
+}
