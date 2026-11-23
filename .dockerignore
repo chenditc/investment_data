@@ -1,4 +1,6 @@
 *.csv
+!ops/provider_scale_20261123/scales.csv
+!ops/provider_scale_20261123/adjustments.csv
 .dolt/
 .sqlhistory
 *.log
