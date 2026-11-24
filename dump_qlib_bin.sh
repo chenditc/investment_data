@@ -302,6 +302,9 @@ QLIB_BIN_DIR="$BUILD_ROOT/qlib_bin"
 mkdir -p "$QLIB_SOURCE_DIR" "$QLIB_NORMALIZE_DIR" "$QLIB_INDEX_DIR" "$QLIB_BIN_DIR"
 
 cd "$INVESTMENT_DATA_DIR"
+if [[ "$PUBLISHABLE" == true ]]; then
+    python3 -m ops.source_certificate verify "$SNAPSHOT_DOLT_CHECKOUT"
+fi
 log_step "Dumping immutable Dolt data to qlib source CSVs"
 QLIB_SOURCE_DIR="$QLIB_SOURCE_DIR" python3 ./qlib/dump_all_to_qlib_source.py
 QLIB_SOURCE_DIR="$QLIB_SOURCE_DIR" python3 - <<'PY'

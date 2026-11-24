@@ -1,0 +1,66 @@
+{
+  "base_commit": "ce2nqentchb6rbqci7vgifcv419glbbn",
+  "last_good_commit": "ea2ldlk9beie1so13fqj5j4frt2epb8m",
+  "date": "2026-11-24",
+  "provider_evidence_run": 45432310964,
+  "provider_inputs": [
+    {
+      "api": "adj_factor",
+      "trade_date": "20261120",
+      "file": "adj_factor-20261120.json",
+      "rows": 5575,
+      "sha256": "3f6b78aa0817663e90aae7b240983fe04cfb3b2c80a7bf4f0f0a615d339b123d",
+      "captured_at_utc": "2026-11-24T16:02:28.848140+00:00"
+    },
+    {
+      "api": "daily",
+      "trade_date": "20261120",
+      "file": "daily-20261120.json",
+      "rows": 5572,
+      "sha256": "0ddf537e3f927a299a98b62f2aa65a2be5013b4d86322e2f80e98ccd2c186d0c",
+      "captured_at_utc": "2026-11-24T16:02:30.853166+00:00"
+    },
+    {
+      "api": "adj_factor",
+      "trade_date": "20261123",
+      "file": "adj_factor-20261123.json",
+      "rows": 5586,
+      "sha256": "470ca5c22c246594c6bc81e8a375791b2d84660e446cd00c7249f898077c2ec4",
+      "captured_at_utc": "2026-11-24T16:02:32.079267+00:00"
+    },
+    {
+      "api": "daily",
+      "trade_date": "20261123",
+      "file": "daily-20261123.json",
+      "rows": 5570,
+      "sha256": "bd5646bfd70e1c4f339610c4455cb80cda3c095b46bdffae7344dd64a801578e",
+      "captured_at_utc": "2026-11-24T16:02:34.053412+00:00"
+    },
+    {
+      "api": "adj_factor",
+      "trade_date": "20261124",
+      "file": "adj_factor-20261124.json",
+      "rows": 5586,
+      "sha256": "409094e695cbf51ccc35c431ab6104ae21edaf9080882664df7d432111fdb4d2",
+      "captured_at_utc": "2026-11-24T16:02:35.319653+00:00"
+    },
+    {
+      "api": "daily",
+      "trade_date": "20261124",
+      "file": "daily-20261124.json",
+      "rows": 5576,
+      "sha256": "6d9224d8779df5866f83b7173b2c1fc411887f4730663dbe15d10fc8c94e9146",
+      "captured_at_utc": "2026-11-24T16:02:37.308729+00:00"
+    }
+  ],
+  "stock_rows": 5576,
+  "total_rows": 5581,
+  "changes": 4723,
+  "raw_cells": 4723,
+  "canonical_cells": 2049,
+  "large_scale_conversions": 196,
+  "raw_quote_fields_verified": 33456,
+  "max_prior_anchor_relative_difference": 4.542200686497584e-06,
+  "adjustments_sha256": "2c9de13dbdef6f7cd9cb95a92b7e785957b6208ea707f22a4e56d1717ad2f0d9",
+  "scope": "Only adjclose cells on unpublished 2026-11-24; preserve all published prices and all raw OHLC/volume/amount."
+}

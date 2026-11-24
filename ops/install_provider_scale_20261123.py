@@ -61,7 +61,7 @@ class Database:
     def run(self,*args):
         return subprocess.check_output([self.binary,*args],cwd=self.path,text=True)
     def query(self,sql):
-        return json.loads(self.run('sql','-r','json','-q',sql))['rows']
+        return json.loads(self.run('sql','-r','json','-q',sql)).get('rows', [])
 
 
 def equal(a,b):

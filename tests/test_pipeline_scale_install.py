@@ -97,6 +97,7 @@ class ScaleInstallTest(unittest.TestCase):
     def test_workflow_install_option_is_explicit_and_image_remains_pinned(self):
         import yaml
         text=(ROOT/'.github/workflows/data_update.yml').read_text();doc=yaml.load(text,Loader=yaml.BaseLoader)
-        self.assertEqual(doc['on']['workflow_dispatch']['inputs']['operation']['options'],['update','install-provider-scale-2026-11-23'])
+        self.assertEqual(doc['on']['workflow_dispatch']['inputs']['operation']['options'],[
+            'update','install-provider-scale-2026-11-23','repair-provider-rows-2026-11-24'])
         self.assertIn('"$IMAGE_REFERENCE"',text)
         self.assertIn('install-provider-scale-2026-11-23) python3 ops/install_provider_scale_20261123.py',text)

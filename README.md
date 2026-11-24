@@ -118,6 +118,19 @@ For the audited 2026-11-23 incident, manually dispatch `data_update.yml` on
 checks its source commit and reference values, records the plan in Dolt, and
 corrects one unpublished raw adjustment cell without changing canonical prices.
 It refuses a changed source base and supports verified repeated execution.
+
+For the unpublished 2026-11-24 rows written by an older external collector,
+`operation=repair-provider-rows-2026-11-24` applies the pinned, reviewed conversion
+plan to that day's adjustment cells only. Run the normal collector after the
+repair and before publishing. Historical prices and raw OHLC/volume/amount are
+preserved. Other Dolt writers must upgrade to the current collector and apply
+the registered factor basis; an older cached image can reintroduce this error.
+
+After successful collection, `ts_collection_verification` records Dolt hashes
+of the price, link, index-weight and factor-metadata tables. Publication of data
+from 2026-11-24 onward requires these exact hashes to match before export.
+An external write invalidates verification until the normal collector checks
+the updated snapshot successfully. Earlier snapshots retain their legacy path.
 ```
 docker run -v /<some output directory>:/output -it --rm chenditc/investment_data \
   bash -lc 'bash daily_update.sh && bash dump_qlib_bin.sh'
