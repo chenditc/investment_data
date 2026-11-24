@@ -17,10 +17,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          image='chenditc/investment_data@sha256:5035cee1e34e98c86e535a3af630e8a8260fb037650cbb2bb5afa1f27d8eeb4e'
+          image='chenditc/investment_data@sha256:5cb7ce7e24c8de15dc9528b2233291933fa1d4b12eacecc9666e3a6af23692b9'
           docker pull "$image"
           revision="$(docker image inspect "$image" --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}')"
-          test "$revision" = '90789a07e5ca750efeb1589a7422d4d91bc49b19'
+          test "$revision" = 'c2ed4d9b39c6b715ff2afd9dd777e9c458bbaf65'
           mkdir -p "$RUNNER_TEMP/provider-evidence"
           docker run --rm -e TUSHARE \
             -v "$GITHUB_WORKSPACE/ops/capture_provider_evidence.py:/diagnostic.py:ro" \
