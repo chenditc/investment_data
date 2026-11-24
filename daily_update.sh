@@ -110,7 +110,7 @@ python3 /investment_data/tushare/update_a_stock_eod_price_to_latest.py
 dolt sql --file /investment_data/tushare/regular_update.sql
 
 # A later publisher must see the exact raw/canonical/metadata tables validated here.
-python3 -m ops.source_certificate attest
+(cd /investment_data && python3 -m ops.source_certificate attest)
 
 stop_dolt_sql_server
 trap - EXIT

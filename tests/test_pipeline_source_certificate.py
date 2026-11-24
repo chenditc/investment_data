@@ -4,6 +4,8 @@ import json
 import os
 from pathlib import Path
 import shutil
+import shlex
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -49,6 +51,21 @@ class RepairPlanTest(unittest.TestCase):
         for ref, event in [('refs/heads/main', 'schedule'), ('refs/heads/other', 'workflow_dispatch')]:
             with mock.patch.dict(os.environ, {'GITHUB_REF':ref, 'GITHUB_EVENT_NAME':event}):
                 with self.assertRaisesRegex(RuntimeError, 'manual main'): repair.main()
+
+
+class EntryPointTest(unittest.TestCase):
+    def test_daily_verification_imports_from_the_dolt_working_directory(self):
+        line = next(line for line in (ROOT/'daily_update.sh').read_text().splitlines()
+                    if 'ops.source_certificate attest' in line)
+        command = (line.replace('/investment_data', shlex.quote(str(ROOT)))
+                   .replace('python3', shlex.quote(sys.executable))
+                   .replace(' attest', ' invalid-mode'))
+        with tempfile.TemporaryDirectory() as temporary:
+            result = subprocess.run(['bash','-c',command],cwd=temporary,
+                                    env={**os.environ,'PYTHONPATH':''},capture_output=True,text=True)
+        self.assertNotEqual(result.returncode,0)
+        self.assertIn('usage: python3 -m ops.source_certificate',result.stderr)
+        self.assertNotIn('ModuleNotFoundError',result.stderr)
 
 
 @unittest.skipUnless(os.environ.get('DOLT_BIN') or shutil.which('dolt'), 'Dolt unavailable')
