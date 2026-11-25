@@ -13,7 +13,7 @@ def main():
     output = Path("/evidence")
     output.mkdir(exist_ok=True, parents=True)
     manifest = []
-    for date in ("20261120", "20261123", "20261124"):
+    for date in ("20261124", "20261125"):
         for api in ("adj_factor", "daily"):
             frame = getattr(pro, api)(trade_date=date)
             if frame.empty or not frame["trade_date"].eq(date).all():
