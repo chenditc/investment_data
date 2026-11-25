@@ -24,7 +24,9 @@ def latest_date(db):
 
 def table_hashes(db):
     result = {}
-    for table in TABLES:
+    tables = {next(iter(r.values())) for r in db.query('SHOW TABLES')}
+    protected = TABLES + (('ts_provider_reconciliation',) if 'ts_provider_reconciliation' in tables else ())
+    for table in protected:
         value = db.query("SELECT DOLT_HASHOF_TABLE('%s') h" % table)[0]['h']
         if not re.fullmatch('[0-9a-v]{32}', value):
             raise ValueError('Invalid source table hash: ' + table)

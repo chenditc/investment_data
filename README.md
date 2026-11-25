@@ -131,6 +131,22 @@ of the price, link, index-weight and factor-metadata tables. Publication of data
 from 2026-11-24 onward requires these exact hashes to match before export.
 An external write invalidates verification until the normal collector checks
 the updated snapshot successfully. Earlier snapshots retain their legacy path.
+
+The normal main collector can reconcile legacy-basis stock appends after the
+latest published trade date. It verifies the formal release manifest digest,
+requires that source commit to be an available ancestor, and rejects changes to
+published price history, existing link ratios, factor metadata or financial
+schemas. Only complete, provider-matching unpublished days can be converted,
+with at most three days per run. Both provider-identity and already-aligned
+values are recognized; unknown factor changes stop the update. The original
+restatement tolerance is unchanged. Plans and provider-input digests are stored
+in Dolt's `ts_provider_reconciliation`, which is included in source verification
+when present. Source pushes still reject a concurrent remote update.
+
+Automatic reconciliation writes require the verified main workflow/image.
+Cold clones retain 32 commits so the published reference is normally available;
+an unavailable or divergent reference stops reconciliation. The external writer
+should still upgrade its own image/code (tracked in #173).
 ```
 docker run -v /<some output directory>:/output -it --rm chenditc/investment_data \
   bash -lc 'bash daily_update.sh && bash dump_qlib_bin.sh'
