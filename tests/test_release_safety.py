@@ -1056,11 +1056,14 @@ class StaticSafetyContractTest(unittest.TestCase):
             root = Path(temporary)
             dolt_dir = root / "dolt"
             (dolt_dir / "investment_data").mkdir(parents=True)
+            application_dir = root / "application"
+            application_dir.mkdir()
             script = root / "daily_update.sh"
             script.write_text(
                 (ROOT / "daily_update.sh")
                 .read_text(encoding="utf-8")
-                .replace('DOLT_DIR="/dolt"', f'DOLT_DIR="{dolt_dir}"', 1),
+                .replace('DOLT_DIR="/dolt"', f'DOLT_DIR="{dolt_dir}"', 1)
+                .replace('cd /investment_data', f'cd "{application_dir}"'),
                 encoding="utf-8",
             )
             os.chmod(script, 0o755)
@@ -1386,7 +1389,8 @@ exit 0
             self.assertIn("chmod -R a+rX /dolt", workflow)
             self.assertNotIn("runs-on: investment-arc", workflow)
             self.assertNotIn("docker volume", workflow)
-        for script in (daily, publisher, dump):
+        self.assertIn("dolt clone --depth 32 --branch master", daily)
+        for script in (publisher, dump):
             self.assertIn("dolt clone --depth 1 --branch master", script)
         self.assertNotIn('cp -a "$SHARED_DOLT_CHECKOUT"', dump)
         self.assertIn('SNAPSHOT_DOLT_CHECKOUT="$SHARED_DOLT_CHECKOUT"', dump)

@@ -100,6 +100,7 @@ jobs:
         DOLT_CONFIG_GLOBAL_JSON: ${{ secrets.DOLT_CONFIG_GLOBAL_JSON }}
         DOLT_JWK: ${{ secrets.DOLT_JWK }}
         TUSHARE: ${{ secrets.TUSHARE }}
+        SOURCE_RECONCILIATION_TOKEN: ${{ github.token }}
         IMAGE_REFERENCE: ${{ steps.image.outputs.reference }}
         SOURCE_UPDATE_OPERATION: ${{ inputs.operation || 'update' }}
       run: |
@@ -125,6 +126,7 @@ jobs:
           -e DOLT_CONFIG_GLOBAL_JSON \
           -e DOLT_JWK \
           -e TUSHARE \
+          -e SOURCE_RECONCILIATION_TOKEN \
           -e DAILY_UPDATE_RESULT_FILE=/tmp/daily-update-result/result \
           -e SOURCE_UPDATE_OPERATION \
           -e GITHUB_REF -e GITHUB_EVENT_NAME -e GITHUB_SHA \

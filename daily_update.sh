@@ -17,7 +17,7 @@ fi
 [ ! -d "${DOLT_DIR}/investment_data" ] \
   && echo "initializing shallow dolt repo" \
   && cd "${DOLT_DIR}" \
-  && dolt clone --depth 1 --branch master chenditc/investment_data investment_data
+  && dolt clone --depth 32 --branch master chenditc/investment_data investment_data
 cd "${DOLT_DIR}/investment_data"
 dolt fetch origin master
 dolt reset --hard origin/master
@@ -103,6 +103,7 @@ stop_dolt_sql_server() {
 
 trap stop_dolt_sql_server EXIT
 sleep 5
+(cd /investment_data && python3 -m ops.reconcile_unpublished)
 python3 /investment_data/tushare/update_a_stock_eod_price_to_latest.py
 
 # The running server owns the repository write lock, so this command is
