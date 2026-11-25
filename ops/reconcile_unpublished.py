@@ -131,22 +131,22 @@ def check_history(db,published):
                 or row.get('from_table_name')==AUDIT):
             raise ValueError('Financial source schema changed')
     for table in ('ts_provider_factor_scale','ts_provider_factor_scale_manifest'):
-        if db.query(f"SELECT COUNT(*) n FROM dolt_diff('{base}','WORKING','{table}')")[0]['n']:
+        if int(db.query(f"SELECT COUNT(*) n FROM dolt_diff('{base}','WORKING','{table}')")[0]['n']):
             raise ValueError('Registered factor metadata changed after publication')
-    if db.query(f"SELECT COUNT(*) n FROM dolt_diff('{base}','WORKING','ts_link_table') WHERE diff_type<>'added'")[0]['n']:
+    if int(db.query(f"SELECT COUNT(*) n FROM dolt_diff('{base}','WORKING','ts_link_table') WHERE diff_type<>'added'")[0]['n']):
         raise ValueError('Existing canonical link ratios changed')
     current_tables={next(iter(r.values())) for r in db.query('SHOW TABLES')}
-    if AUDIT in current_tables and db.query(f"SELECT COUNT(*) n FROM dolt_diff('{base}','WORKING','{AUDIT}') WHERE diff_type<>'added'")[0]['n']:
+    if AUDIT in current_tables and int(db.query(f"SELECT COUNT(*) n FROM dolt_diff('{base}','WORKING','{AUDIT}') WHERE diff_type<>'added'")[0]['n']):
         raise ValueError('Published reconciliation audit history changed')
-    if db.query(f"SELECT COUNT(*) n FROM dolt_diff('{base}','WORKING','final_a_stock_eod_price') "
-                f"WHERE diff_type<>'added' OR to_tradedate<='{cutoff}'")[0]['n']:
+    if int(db.query(f"SELECT COUNT(*) n FROM dolt_diff('{base}','WORKING','final_a_stock_eod_price') "
+                f"WHERE diff_type<>'added' OR to_tradedate<='{cutoff}'")[0]['n']):
         raise ValueError('Published canonical price history changed')
     indices=','.join("'"+s+"'" for s in sorted(INDICES))
     nulls=' OR '.join('from_'+f+' IS NULL' for f in ('open','high','low','close','volume','amount'))
     seed="(from_tradedate='2004-12-31' AND from_close=1000 AND (from_open=0 OR from_high=0 OR from_low=0 OR from_volume=0 OR from_amount=0))"
     allowed=f"(diff_type='removed' AND from_symbol IN ({indices}) AND ({nulls} OR {seed}))"
-    if db.query(f"SELECT COUNT(*) n FROM dolt_diff('{base}','WORKING','ts_a_stock_eod_price') "
-                f"WHERE (diff_type<>'added' OR to_tradedate<='{cutoff}') AND NOT {allowed}")[0]['n']:
+    if int(db.query(f"SELECT COUNT(*) n FROM dolt_diff('{base}','WORKING','ts_a_stock_eod_price') "
+                f"WHERE (diff_type<>'added' OR to_tradedate<='{cutoff}') AND NOT {allowed}")[0]['n']):
         raise ValueError('Published raw price history changed')
 
 

@@ -127,6 +127,14 @@ class RealDoltReconciliationTest(unittest.TestCase):
         self.assertEqual(self.reconcile()['result'],'unchanged');self.assertEqual(self.current(),22)
         self.assertEqual(self.db.query('SELECT COUNT(*) n FROM dolt_status')[0]['n'],0)
 
+    def test_server_protocol_string_counts_do_not_look_like_changes(self):
+        original=self.db.query
+        def routed(sql):
+            return [{k:str(v) if k=='n' else v for k,v in r.items()} for r in original(sql)]
+        with mock.patch.object(self.db,'query',side_effect=routed):
+            self.assertEqual(self.reconcile()['result'],'reconciled')
+        self.assertEqual(self.current(),22)
+
     def test_mixed_raw_and_canonical_bases_are_recognized_without_double_scaling(self):
         self.db.run('sql','-q',"UPDATE ts_a_stock_eod_price SET adjclose=22 WHERE symbol='000001.SZ' AND tradedate='2026-11-25'")
         self.commit('raw already aligned')
